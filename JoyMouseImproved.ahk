@@ -22,23 +22,25 @@ class Settings
 		this.ScrollWheelDelay := 30
 		this.DPadDelay := 30
 
-
+		this.active := True
 	}
 }
 
-Global UserSettings := new Settings
+Global Session := new Settings
 Global keyboard := new OSK 
 Global MouseController := new MouseControls()
 
-SetTimer, DPad, % UserSettings.DPadDelay
-MouseController.SetTimer("cursor_timer", UserSettings.MouseMoveDelay)
-MouseController.SetTimer("scroll_wheel_timer", UserSettings.ScrollWheelDelay)
+SetTimer, checkJoyOn, 1000
 
-Hotkey, % UserSettings.JoystickNumber . "Joy1", J1
-Hotkey, % UserSettings.JoystickNumber . "Joy2", J2
-Hotkey, % UserSettings.JoystickNumber . "Joy3", J3
-Hotkey, % UserSettings.JoystickNumber . "Joy4", J4
-Hotkey, % UserSettings.JoystickNumber . "Joy5", J5
+SetTimer, DPad, % Session.DPadDelay
+MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
+MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+
+Hotkey, % Session.JoystickNumber . "Joy1", J1
+Hotkey, % Session.JoystickNumber . "Joy2", J2
+Hotkey, % Session.JoystickNumber . "Joy3", J3
+Hotkey, % Session.JoystickNumber . "Joy4", J4
+Hotkey, % Session.JoystickNumber . "Joy5", J5
 2Joy8::Reload ; for development
 
 ; A
@@ -78,39 +80,45 @@ J5:
 	Return
 
 DPad() {
-	GetKeyState, JoyPOV, % UserSettings.JoyStickNumber "JoyPov"
-	GetKeyState, JoyZ, % UserSettings.JoyStickNumber "JoyZ"
+	GetKeyState, JoyPOV, % Session.JoyStickNumber "JoyPov"
+	GetKeyState, JoyZ, % Session.JoyStickNumber "JoyZ"
 	if (JoyPOV = -1) {  ; No angle.
 		return
 	}
+
+	left := JoyPOV = 27000
+	up := JoyPOV = 0
+	down := JoyPOV = 18000
+	right := JoyPOV = 9000
+
 	if keyboard.isActive() {
-		if JoyPOV = 27000
+		if left
 			keyboard.changeIndex("Left")
-		else if JoyPOV = 0
+		else if up
 			keyboard.changeIndex("Up")
-		else if JoyPOV = 18000
+		else if down
 			keyboard.changeIndex("Down")
-		else if JoyPOV = 9000
+		else if right
 			keyboard.changeIndex("Right")
 	}
 	else if (JoyZ < 60) {
-		if JoyPOV = 27000
+		if left
 			Send {Left}
-		else if JoyPOV = 0
+		else if up
 			Send {Up}
-		else if JoyPOV = 18000
+		else if down
 			Send {Down}
-		else if JoyPOV = 9000
+		else if right
 			Send {Right}
 	} 
 	else {
-		if JoyPOV = 27000
+		if left
 			Send ^+{Tab}
-		else if JoyPOV = 0
+		else if up
 			Send ^t
-		else if JoyPOV = 18000
+		else if down
 			Send ^w
-		else if JoyPOV = 9000
+		else if right
 			Send ^{Tab}
 	}
 	Sleep, 200
@@ -120,7 +128,7 @@ DPad() {
 Class MouseControls
 {
     __New() {
-		this.top_speed := UserSettings.MouseTopSpeed
+		this.top_speed := Session.MouseTopSpeed
         this.velocity_x := 0
         this.velocity_y := 0
         this.scroll_wheel_timer := ObjBindMethod(this, "MoveScrollWheel")
@@ -133,21 +141,21 @@ Class MouseControls
     }
 
     MoveScrollWheel() {
-		GetKeyState, JoyR, % UserSettings.JoyStickNumber "JoyR"
-		if (JoyR > UserSettings.JoyThresholdUpper) {
+		GetKeyState, JoyR, % Session.JoyStickNumber "JoyR"
+		if (JoyR > Session.JoyThresholdUpper) {
 			Send {WheelDown}
 		}
 
-		if (JoyR < UserSettings.JoyThresholdLower) {
+		if (JoyR < Session.JoyThresholdLower) {
 			Send {WheelUp}
 		}
 
-		GetKeyState, JoyU, % UserSettings.JoyStickNumber "JoyU"
-		if (JoyU > UserSettings.JoyThresholdUpper) {
+		GetKeyState, JoyU, % Session.JoyStickNumber "JoyU"
+		if (JoyU > Session.JoyThresholdUpper) {
 			send {WheelRight}
 		}
 
-		if (JoyU < UserSettings.JoyThresholdLower) {
+		if (JoyU < Session.JoyThresholdLower) {
 			Send {WheelLeft}
 		}
 
@@ -155,36 +163,36 @@ Class MouseControls
     }
 
     MoveCursor() {
-		JoyX := GetKeyState(UserSettings.JoyStickNumber . "JoyX")
-		JoyY := GetKeyState(UserSettings.JoyStickNumber . "JoyY")
+		JoyX := GetKeyState(Session.JoyStickNumber . "JoyX")
+		JoyY := GetKeyState(Session.JoyStickNumber . "JoyY")
 
 
-		if (JoyY <= UserSettings.JoyThresholdLower) {
-			y := (JoyY / UserSettings.JoyThresholdLower) - 1
+		if (JoyY <= Session.JoyThresholdLower) {
+			y := (JoyY / Session.JoyThresholdLower) - 1
 		}
-		else if (JoyY >= UserSettings.JoyThresholdUpper) {
-			y := (JoyY - UserSettings.JoyThresholdUpper) / (100 - UserSettings.JoyThresholdUpper)
+		else if (JoyY >= Session.JoyThresholdUpper) {
+			y := (JoyY - Session.JoyThresholdUpper) / (100 - Session.JoyThresholdUpper)
 		}
 		else
 			y := 0
 
 
-		if (JoyX <= UserSettings.JoyThresholdLower) {
-			x := (JoyX / UserSettings.JoyThresholdLower) - 1
+		if (JoyX <= Session.JoyThresholdLower) {
+			x := (JoyX / Session.JoyThresholdLower) - 1
 		}
-		else if (JoyX >= UserSettings.JoyThresholdUpper) {
-			x := (JoyX - UserSettings.JoyThresholdUpper) / (100 - UserSettings.JoyThresholdUpper)
+		else if (JoyX >= Session.JoyThresholdUpper) {
+			x := (JoyX - Session.JoyThresholdUpper) / (100 - Session.JoyThresholdUpper)
 		}
 		else
 			x := 0
 
 		if (x != 0 or y != 0){
-			JoyZ := GetKeyState(UserSettings.JoyStickNumber . "JoyZ")
+			JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
 
 			if JoyZ > 45
 				JoyZ := 50
 
-			MouseMove, (1 + UserSettings.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * x,  (1 + UserSettings.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * y, 0, R
+			MouseMove, (1 + Session.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * x,  (1 + Session.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * y, 0, R
 		}
     }
 }
@@ -194,8 +202,6 @@ Class MouseControls
 On-Screen Keyboard -- OSK() v1.5  By FeiYue
 
 This is a small tool similar to the WinXP's On-Screen Keyboard.
-
-Written in function form, easy to invoke in other scripts.
 
 --------------------------------
 */
@@ -262,7 +268,7 @@ Class OSK
         ; row 4
 		this.layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],[": `;"],[""" '"],["Enter",77] ])
         ; row 5
-		this.layout.Push([ ["Shift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["Shift",94],["↑",,77] ])
+		this.layout.Push([ ["Shift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["Shift",94],["↑",60,72] ])
         ; row 6
 		this.layout.Push([ ["Ctrl",60],["Win",60],["Alt",60],[" ",222],["Alt",60],["Win",60],["App",60],["Ctrl",60],["←",60,10],["↓",60],["→",60] ])
 
@@ -335,16 +341,16 @@ Class OSK
 	SendPress(k) {
 		if k in Shift,Ctrl,Win,Alt
 		{
-			v:=k="Win" ? "LWin" : k
+			v := k="Win" ? "LWin" : k
 			GuiControlGet, isEnabled, OSK: Enabled, %k%
 			GuiControl, OSK: Disable%isEnabled%, %k%
 			if (!isEnabled)
 			SendInput, {Blind}{%v%}
 			return
 		}
-		s:=InStr(k," ") ? SubStr(k,0) : k
-		s:=(keyboard.PrettyName[s]) ? keyboard.PrettyName[s] : s  ; can't use this for some reason
-		s:="{" s "}"
+		s := InStr(k," ") ? SubStr(k,0) : k
+		s := (keyboard.PrettyName[s]) ? keyboard.PrettyName[s] : s  ; can't use this for some reason
+		s := "{" s "}"
 		For i,k in StrSplit("Shift,Ctrl,Win,Alt", ",")
 		{
 			GuiControlGet, isEnabled, OSK: Enabled, %k%
@@ -352,7 +358,7 @@ Class OSK
 			{
 			GuiControl, OSK: Enable, %k%
 			v:=k="Win" ? "LWin" : k
-			s={%v% Down}%s%{%v% Up}
+			s = {%v% Down}%s%{%v% Up}
 			}
 		}
 		SendInput, {Blind}%s%
@@ -406,7 +412,7 @@ Class OSK
     }
 
 	handleChangeIndex(direction) {
-		; fix unusual index changes due to variable button widths
+		; hardcoded logic to fix unusual index changes due to variable button widths
 		if (this.RowIndex = 1) {
 			if (this.ColumnIndex > 1 and direction = "Down")
 				this.ColumnIndex += 1
