@@ -137,6 +137,7 @@ Class MouseControls
     SetTimer(timer_id, period) {
         timer := this[timer_id]
         SetTimer % timer, % period
+		return
     }
 
     MoveScrollWheel() {
@@ -170,7 +171,6 @@ Class MouseControls
 		JoyX := GetKeyState(Session.JoyStickNumber . "JoyX")
 		JoyY := GetKeyState(Session.JoyStickNumber . "JoyY")
 
-
 		if (JoyY <= Session.JoyThresholdLower) {
 			y := (JoyY / Session.JoyThresholdLower) - 1
 		}
@@ -198,6 +198,8 @@ Class MouseControls
 
 			MouseMove, (1 + Session.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * x,  (1 + Session.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * y, 0, R
 		}
+
+		Return
     }
 }
 
@@ -298,7 +300,7 @@ Class OSK
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
                 Gui, OSK:Add, Text, % j " c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndthwnd gHandleClick " SS_CenterTextInBox, % v.1
-                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 "Disabled Background" this.button_outline_colour " c" this.button_colour " hwndphwnd", 100
+                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.button_outline_colour " c" this.button_colour " hwndphwnd", 100
                 Gui, OSK:Add, Text, % "xp yp c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtthwnd " SS_CenterTextInBox, % v.1
 
 
@@ -309,11 +311,12 @@ Class OSK
 		Return
 
 		HandleClick:
-			keyboard.UpdateGraphics( keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.button_colour )
-			GuiControlGet, thwnd, hwnd, % A_GuiControl
-			keyboard.RowIndex := keyboard.Handles[thwnd][1]
-			keyboard.ColumnIndex := keyboard.Handles[thwnd][2]
-			keyboard.UpdateGraphics( keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.active_button_colour)
+			keyboard.UpdateGraphics(keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.button_colour)
+			GuiControlGet, bottomt, hwnd, % A_GuiControl
+			keyboard.RowIndex := keyboard.Handles[bottomt][1]
+			keyboard.ColumnIndex := keyboard.Handles[bottomt][2]
+			; msgbox % bottomt ", " keyboard.RowIndex ", " keyboard.ColumnIndex
+			keyboard.UpdateGraphics(keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.active_button_colour)
 			keyboard.SendPress(A_GuiControl)	
 			return
 	}
@@ -353,7 +356,7 @@ Class OSK
 			return
 		}
 		s := InStr(k," ") ? SubStr(k,0) : k
-		s := (keyboard.PrettyName[s]) ? keyboard.PrettyName[s] : s  ; can't use this for some reason
+		s := (this.PrettyName[s]) ? this.PrettyName[s] : s
 		s := "{" s "}"
 		For i,k in StrSplit("Shift,Ctrl,Win,Alt", ",")
 		{
@@ -466,6 +469,7 @@ Class OSK
 			else if (this.ColumnIndex = 4 and direction = "Up" or direction = "Down")
 				this.ColumnIndex := 6
 		}
+		return
 	}
 
     UpdateGraphics( obj , Color ){
