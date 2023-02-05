@@ -8,7 +8,8 @@ SetBatchLines, -1
 Process, Priority,, H
 DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
-class Settings
+class State
+; Settings and session info
 {
 	__new() {
 		this.JoystickNumber := 2
@@ -26,11 +27,9 @@ class Settings
 	}
 }
 
-Global Session := new Settings
+Global Session := new State
 Global keyboard := new OSK 
 Global MouseController := new MouseControls()
-
-SetTimer, checkJoyOn, 1000
 
 SetTimer, DPad, % Session.DPadDelay
 MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
@@ -142,6 +141,11 @@ Class MouseControls
 
     MoveScrollWheel() {
 		GetKeyState, JoyR, % Session.JoyStickNumber "JoyR"
+
+		; check joystick is on
+		if not JoyR
+			return
+
 		if (JoyR > Session.JoyThresholdUpper) {
 			Send {WheelDown}
 		}
