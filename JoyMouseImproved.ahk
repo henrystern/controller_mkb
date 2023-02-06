@@ -483,6 +483,7 @@ Class OSK
 	Hide() {
 		this.Enabled := False
 		Gui, OSK: Hide
+		this.SetTimer("MonitorKeyPresses", "off")
 		return
 	}
 
