@@ -292,9 +292,11 @@ Class OSK
 		this.button_colour := "0d1117" 
 		this.button_outline_colour := "0d1117" 
 		this.active_button_colour := "1b1a20" 
-		this.sent_button_colour := "35333f" 
-		this.toggled_button_colour := "7c2a2a"
+		this.sent_button_colour := "7c2a2b"
+		this.toggled_button_colour := "7c2a2a" ; don't set exactly the same as sent_button_colour
 		this.text_colour := "8b949e"
+
+        this.MonitorKeyPresses := ObjBindMethod(this, "MonitorAllKeys") ; can choose between MonitorModifiers and MonitorAllKeys
 
 		this.layout := []
         ; row 1- format is ["Text", width:=45, offset:=2]
@@ -385,8 +387,7 @@ Class OSK
 
 		Gui, OSK:Show, % "x" GUI_X " y" GUI_Y " NA", On-Screen Keyboard
 
-        this.MonitorModifier := ObjBindMethod(this, "MonitorModifiers")
-		this.SetTimer("MonitorModifier", 30)
+		this.SetTimer("MonitorKeyPresses", 30)
 
 		Return
 	}
@@ -434,6 +435,31 @@ Class OSK
 		Return
 	}
 
+
+	MonitorAllKeys() {
+		For _, row in this.Layout {
+			For i, key in row {
+				mod := key.1
+				if (mod = "Caps")
+					modifier_on := GetKeyState("CapsLock", "T")
+				else
+					modifier_on := GetKeyState(mod)
+				ModifierRow := this.Keys[mod][1]
+				ModifierColumn := this.Keys[mod][2]
+				if (modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour != this.toggled_button_colour) {
+					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.toggled_button_colour)
+				}
+				else if (not modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour = this.toggled_button_colour) {
+					if (ModifierRow = this.RowIndex and ModifierColumn = this.ColumnIndex)
+						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.active_button_colour)
+					else
+						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.button_colour)
+				}
+			}
+		}
+		Return
+	}
+
 	SendPress(k) {
 		SentRow := this.Keys[k][1]
 		SentColumn := this.Keys[k][2]
@@ -441,8 +467,7 @@ Class OSK
 		this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.sent_button_colour)
 		s := InStr(k," ") ? SubStr(k,0) : k
 		s := (this.PrettyName[s]) ? this.PrettyName[s] : s
-		s := "{" s "}"
-		SendInput, {Blind}%s%
+		SendInput, % "{Blind}{" s "}" 
 		For _, mod in this.Modifiers {
 			modifier_on := GetKeyState(mod)
 			if (modifier_on)
@@ -542,9 +567,9 @@ Class OSK
 				this.RowIndex -= 1
 				this.ColumnIndex += 3
 			}
-			if (this.ColumnIndex = 13 and direction = "Down")
+			else if (this.ColumnIndex = 13 and direction = "Down")
 				this.ColumnIndex += 1
-			if (this.ColumnIndex = 12 and direction = "Up")
+			else if (this.ColumnIndex = 12 and direction = "Up")
 				this.ColumnIndex += 1
 			else if (this.ColumnIndex > 8 and direction = "Down")
 				this.ColumnIndex -= 4
@@ -552,12 +577,15 @@ Class OSK
 				this.ColumnIndex := 4
 		}
 		else if (this.RowIndex = 6) {
-			if (this.ColumnIndex > 7 and direction = "Down")
+			if (this.ColumnIndex > 7 and direction = "Down") {
 				this.ColumnIndex += 5
-			else if (this.ColumnIndex > 4 and direction = "Up" or direction = "Down")
+			}
+			else if (this.ColumnIndex > 4 and (direction = "Up" or direction = "Down")) {
 				this.ColumnIndex += 4
-			else if (this.ColumnIndex = 4 and direction = "Up" or direction = "Down")
+			}
+			else if (this.ColumnIndex = 4 and (direction = "Up" or direction = "Down")) {
 				this.ColumnIndex := 6
+			}
 		}
 		return
 	}
