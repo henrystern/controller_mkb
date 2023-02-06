@@ -46,26 +46,26 @@ Hotkey, % Session.JoystickNumber . "Joy4", J4
 Hotkey, % Session.JoystickNumber . "Joy5", J5
 
 2Joy8::Reload ; for development
-*Ins::keyboard.toggle() ; for development
+*Ins::keyboard.Toggle() ; for development
 ^r::Reload ; for development
 
-#If, keyboard.enabled
+#If, keyboard.Enabled
 
-*Up::keyboard.changeIndex("Up")
+*Up::keyboard.ChangeIndex("Up")
 	
-*Down::keyboard.changeIndex("Down")
+*Down::keyboard.ChangeIndex("Down")
 	
-*Left::keyboard.changeIndex("Left")
+*Left::keyboard.ChangeIndex("Left")
 
-*Right::keyboard.changeIndex("Right")
+*Right::keyboard.ChangeIndex("Right")
 
 *Enter::
-	if (not keyboard.enabled and not keyboard.RowIndex) {
+	if (not keyboard.Enabled and not keyboard.RowIndex) {
 		SendInput, {Enter}
 	}
 	else {
 		k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-		if (keyboard.isModifier(k))
+		if (keyboard.IsModifier(k))
 			keyboard.SendModifier(k)
 		else
 			keyboard.SendPress(k)
@@ -90,12 +90,12 @@ J2:
 
 ; X
 J3:
-	if (not keyboard.enabled and not keyboard.RowIndex) {
+	if (not keyboard.Enabled and not keyboard.RowIndex) {
 		SendInput, {Enter}
 	}
 	else {
 		k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-		if (keyboard.isModifier(k))
+		if (keyboard.IsModifier(k))
 			keyboard.SendModifier(k)
 		else
 			keyboard.SendPress(k)
@@ -104,7 +104,7 @@ J3:
 
 ; Y
 J4:
-	keyboard.toggle()
+	keyboard.Toggle()
 	Return
 
 ; LB
@@ -126,15 +126,15 @@ DPad() {
 	down := JoyPOV = 18000
 	right := JoyPOV = 9000
 
-	if keyboard.enabled {
+	if keyboard.Enabled {
 		if left
-			keyboard.changeIndex("Left")
+			keyboard.ChangeIndex("Left")
 		else if up
-			keyboard.changeIndex("Up")
+			keyboard.ChangeIndex("Up")
 		else if down
-			keyboard.changeIndex("Down")
+			keyboard.ChangeIndex("Down")
 		else if right
-			keyboard.changeIndex("Right")
+			keyboard.ChangeIndex("Right")
 	}
 	else if (JoyZ < 60) {
 		if left
@@ -247,84 +247,84 @@ Class OSK
 ; Adapted from feiyue's script: https://www.autohotkey.com/boards/viewtopic.php?t=58366 
 {
 
-	__new() {
-		this.enabled := False
+	__New() {
+		this.Enabled := False
 
 		this.Keys := []
 		this.Controls := []
 		this.Modifiers := ["LShift", "LCtrl", "LWin", "LAlt", "RShift", "RCtrl", "RWin", "RAlt", "Caps"]
 
-		this.background := "010409"
-		this.button_colour := "0d1117" 
-		this.button_outline_colour := "0d1117" 
-		this.active_button_colour := "1b1a20" 
-		this.sent_button_colour := "7c2a2b"
-		this.toggled_button_colour := "7c2a2a" ; don't set exactly the same as sent_button_colour
-		this.text_colour := "8b949e"
+		this.Background := "010409"
+		this.ButtonColour := "0d1117" 
+		this.ButtonOutlineColour := "0d1117" 
+		this.ActiveButtonColour := "1b1a20" 
+		this.SentButtonColour := "7c2a2b"
+		this.ToggledButtonColour := "7c2a2a" ; don't set exactly the same as SentButtonColour
+		this.TextColour := "8b949e"
 
         this.MonitorKeyPresses := ObjBindMethod(this, "MonitorAllKeys") ; can choose between MonitorModifiers and MonitorAllKeys
 
-		this.layout := []
+		this.Layout := []
         ; row 1- format is ["Text", width:=45, offset:=2]
-        this.layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrScn",60,10],["ScrLk",60],["Pause",60] ])
+        this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrScn",60,10],["ScrLk",60],["Pause",60] ])
         ; row 2
-		this.layout.Push([ ["~", 30],["! 1"],["@ 2"],["# 3"],["$ 4"],["% 5"],["^ 6"],["&& 7"],["* 8"],["( 9"],[") 0"],["_ -"],["+ ="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
+		this.Layout.Push([ ["~", 30],["! 1"],["@ 2"],["# 3"],["$ 4"],["% 5"],["^ 6"],["&& 7"],["* 8"],["( 9"],[") 0"],["_ -"],["+ ="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
         ; row 3
-		this.layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["{ ["],["} ]"],["| \"],["Del",60,10],["End",60],["PgDn",60] ])
+		this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["{ ["],["} ]"],["| \"],["Del",60,10],["End",60],["PgDn",60] ])
         ; row 4
-		this.layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],[": `;"],[""" '"],["Enter",77] ])
+		this.Layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],[": `;"],[""" '"],["Enter",77] ])
         ; row 5
-		this.layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["RShift",94],["↑",60,72] ])
+		this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["RShift",94],["↑",60,72] ])
         ; row 6
-		this.layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],[" ",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["←",60,10],["↓",60],["→",60] ])
+		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],[" ",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["←",60,10],["↓",60],["→",60] ])
 
 		this.PrettyName := { " ":"Space", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
 
-		this.make()
+		this.Make()
 	}
 
-    SetTimer(timer_id, period) {
-        timer := this[timer_id]
-        SetTimer % timer, % period
+    SetTimer(TimerID, Period) {
+        Timer := this[TimerID]
+        SetTimer % Timer, % Period
 		return
     }
 
-	isModifier(key) {
-		if (key = "LShift" or key = "LCtrl" or key = "LAlt" or key = "LWin" or key = "RShift" or key = "RCtrl" or key = "RAlt" or key = "RWin" or key = "Caps")
+	IsModifier(Key) {
+		if (Key = "LShift" or Key = "LCtrl" or Key = "LAlt" or Key = "LWin" or Key = "RShift" or Key = "RCtrl" or Key = "RAlt" or Key = "RWin" or Key = "Caps")
 			return True
 		else
 			return False
 	}
 
-	make() {
+	Make() {
 		Gui, OSK: +AlwaysOnTop -DPIScale +Owner -Caption +E0x08000000 
 		Gui, OSK: Font, s12
 		Gui, OSK: Margin, 10, 10
-		Gui, OSK: Color, % this.background
+		Gui, OSK: Color, % this.Background
 		SS_CenterTextInBox := 0x200 ; styling adjustment
-		For index, row in this.layout {
-            if index <= 2
+		For Index, Row in this.Layout {
+            if Index <= 2
                 j := ""
 
-			For i,v in row {
+			For i,v in Row {
                 w := v.2 ? v.2 : 45 
                 d := v.3 ? v.3 : 2
                 j := j = "" ? "xm" : i=1 ? "xm y+2" : "x+" d
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
-                Gui, OSK:Add, Text, % j " c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % v.1
-                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.button_outline_colour " c" this.button_colour " hwndp", 100
-                Gui, OSK:Add, Text, % "xp yp c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % v.1
+                Gui, OSK:Add, Text, % j " c" this.TextColour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % v.1
+                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.ButtonOutlineColour " c" this.ButtonColour " hwndp", 100
+                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % v.1
 
 				this.Keys[v.1] := [index, i]
-                this.Controls[index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.button_colour}
+                this.Controls[index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.ButtonColour}
 			}
 		}
 		Return
 	}
 
 	HandleOSKClick() {
-		if (this.isModifier(A_GuiControl)) {
+		if (this.IsModifier(A_GuiControl)) {
 			this.SendModifier(A_GuiControl)
 		}
 		else {
@@ -333,11 +333,11 @@ Class OSK
 		return
 	}
 
-	show() {
-		this.enabled := True
+	Show() {
+		this.Enabled := True
 
 		; reset active key
-		this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
+		this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.ButtonColour)
 		this.ColumnIndex := 0
 		this.RowIndex := 0
 
@@ -391,44 +391,44 @@ Class OSK
 		h := NumGet(rc, 12, "int")
 	}
 
-	SendModifier(k) {
-		ModifierRow := this.Keys[k][1]
-		ModifierColumn := this.Keys[k][2]
-		if (k = "Caps") {
-			modifier_on := GetKeyState("CapsLock", "T")
-			if modifier_on
+	SendModifier(Key) {
+		ModifierRow := this.Keys[Key][1]
+		ModifierColumn := this.Keys[Key][2]
+		if (Key = "Caps") {
+			ModifierOn := GetKeyState("CapsLock", "T")
+			if ModifierOn
 				SetCapsLockState, Off
 			else
 				SetCapsLockState, On
 		}
 		else {
-			modifier_on := GetKeyState(k)
-			if (modifier_on) {
-				SendInput, % "{" k " up}"
+			ModifierOn := GetKeyState(Key)
+			if (ModifierOn) {
+				SendInput, % "{" Key " up}"
 			}
 			else {
-				SendInput, % "{" k " down}"
+				SendInput, % "{" Key " down}"
 			}
 		}
 		return
 	}
 
 	MonitorModifiers() {
-		For _, mod in this.Modifiers {
-			if (mod = "Caps")
-				modifier_on := GetKeyState("CapsLock", "T")
+		For _, Modifier in this.Modifiers {
+			if (Modifier = "Caps")
+				ModifierOn := GetKeyState("CapsLock", "T")
 			else
-				modifier_on := GetKeyState(mod)
-			ModifierRow := this.Keys[mod][1]
-			ModifierColumn := this.Keys[mod][2]
-			if (modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour != this.toggled_button_colour) {
-				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.toggled_button_colour)
+				ModifierOn := GetKeyState(Modifier)
+			ModifierRow := this.Keys[Modifier][1]
+			ModifierColumn := this.Keys[Modifier][2]
+			if (ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour != this.ToggledButtonColour) {
+				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ToggledButtonColour)
 			}
-			else if (not modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour = this.toggled_button_colour) {
+			else if (not ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour = this.ToggledButtonColour) {
 				if (ModifierRow = this.RowIndex and ModifierColumn = this.ColumnIndex)
-					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.active_button_colour)
+					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ActiveButtonColour)
 				else
-					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.button_colour)
+					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ButtonColour)
 			}
 		}
 		Return
@@ -436,163 +436,163 @@ Class OSK
 
 
 	MonitorAllKeys() {
-		For _, row in this.Layout {
-			For i, key in row {
-				mod := key.1
-				if (mod = "Caps")
-					modifier_on := GetKeyState("CapsLock", "T")
+		For _, Row in this.Layout {
+			For i, Key in Row {
+				Modifier := Key.1
+				if (Modifier = "Caps")
+					ModifierOn := GetKeyState("CapsLock", "T")
 				else
-					modifier_on := GetKeyState(mod)
-				ModifierRow := this.Keys[mod][1]
-				ModifierColumn := this.Keys[mod][2]
-				if (modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour != this.toggled_button_colour) {
-					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.toggled_button_colour)
+					ModifierOn := GetKeyState(Modifier)
+				ModifierRow := this.Keys[Modifier][1]
+				ModifierColumn := this.Keys[Modifier][2]
+				if (ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour != this.ToggledButtonColour) {
+					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ToggledButtonColour)
 				}
-				else if (not modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour = this.toggled_button_colour) {
+				else if (not ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour = this.ToggledButtonColour) {
 					if (ModifierRow = this.RowIndex and ModifierColumn = this.ColumnIndex)
-						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.active_button_colour)
+						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ActiveButtonColour)
 					else
-						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.button_colour)
+						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ButtonColour)
 				}
 			}
 		}
 		Return
 	}
 
-	SendPress(k) {
-		SentRow := this.Keys[k][1]
-		SentColumn := this.Keys[k][2]
+	SendPress(Key) {
+		SentRow := this.Keys[Key][1]
+		SentColumn := this.Keys[Key][2]
 		OldColor := this.Controls[SentRow][SentColumn].Colour
-		this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.sent_button_colour)
-		s := InStr(k," ") ? SubStr(k,0) : k
-		s := (this.PrettyName[s]) ? this.PrettyName[s] : s
-		SendInput, % "{Blind}{" s "}" 
-		For _, mod in this.Modifiers {
-			modifier_on := GetKeyState(mod)
-			if (modifier_on)
-				SendInput, % "{" mod " up}"
+		this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.SentButtonColour)
+		SendKey := InStr(Key, " ") ? SubStr(Key, 0) : Key
+		SendKey := (this.PrettyName[SendKey]) ? this.PrettyName[SendKey] : SendKey
+		SendInput, % "{Blind}{" SendKey "}" 
+		For _, Modifier in this.Modifiers {
+			ModifierOn := GetKeyState(Modifier)
+			if (ModifierOn)
+				SendInput, % "{" Modifier " up}"
 		}
 		Sleep, 100
 		if (SentRow = this.RowIndex and SentColumn = this.ColumnIndex)
-			this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.active_button_colour)
+			this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.ActiveButtonColour)
 		else
-			this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.button_colour)
+			this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.ButtonColour)
 		Return
 	}
 
-	hide() {
-		this.enabled := False
+	Hide() {
+		this.Enabled := False
 		Gui, OSK: Hide
 		return
 	}
 
-	toggle() {
-		If this.enabled {
-			this.hide()
+	Toggle() {
+		If this.Enabled {
+			this.Hide()
 		}
 		Else {
-			this.show()
+			this.Show()
 		}
 		Return
 	}
 
-    changeIndex(direction) {
+    ChangeIndex(Direction) {
 		if (not this.RowIndex) {
 			this.RowIndex := 4
 			this.ColumnIndex := 7
 		}
 
-		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.toggled_button_colour)
-			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
+		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.ToggledButtonColour)
+			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.ButtonColour)
 
-		this.handleChangeIndex(direction)
+		this.HandleChangeIndex(Direction)
 
-        if (direction = "Up") {
+        if (Direction = "Up") {
 			if this.RowIndex = 1
 				this.RowIndex := this.Controls.Length()
 			else
 				this.RowIndex := this.RowIndex - 1
             this.ColumnIndex := min(this.ColumnIndex, this.Controls[this.RowIndex].Length())
         }
-        if (direction = "Down") {
+        if (Direction = "Down") {
             this.RowIndex := mod(this.RowIndex, this.Controls.Length()) + 1
             this.ColumnIndex := min(this.ColumnIndex, this.Controls[this.RowIndex].Length())
         }
-        if (direction = "Left") {
+        if (Direction = "Left") {
 			if this.ColumnIndex = 1
 				this.ColumnIndex := this.Controls[this.RowIndex].Length()
 			else
 				this.ColumnIndex := this.ColumnIndex - 1
         }
-        if (direction = "Right") {
+        if (Direction = "Right") {
             this.ColumnIndex := mod(this.ColumnIndex, this.Controls[this.RowIndex].Length()) + 1
         }
 
-		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.toggled_button_colour)
-			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.active_button_colour)
+		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.ToggledButtonColour)
+			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.ActiveButtonColour)
     }
 
-	handleChangeIndex(direction) {
+	HandleChangeIndex(Direction) {
 		; hardcoded logic to fix unusual index changes due to variable button widths
 		if (this.RowIndex = 1) {
-			if (this.ColumnIndex > 1 and direction = "Down")
+			if (this.ColumnIndex > 1 and Direction = "Down")
 				this.ColumnIndex += 1
-			else if (this.ColumnIndex > 12 and direction = "Up")
+			else if (this.ColumnIndex > 12 and Direction = "Up")
 				this.ColumnIndex -= 5
-			else if (this.ColumnIndex > 8 and direction = "Up")
+			else if (this.ColumnIndex > 8 and Direction = "Up")
 				this.ColumnIndex -= 4
-			else if (this.ColumnIndex > 3 and direction = "Up")
+			else if (this.ColumnIndex > 3 and Direction = "Up")
 				this.ColumnIndex := 4
 		}
 		else if (this.RowIndex = 2) {
-			if (this.ColumnIndex > 1 and direction = "Up")
+			if (this.ColumnIndex > 1 and Direction = "Up")
 				this.ColumnIndex -= 1
 		}
 		else if (this.RowIndex = 3) {
-			if (this.ColumnIndex = 14 and direction = "Down")
+			if (this.ColumnIndex = 14 and Direction = "Down")
 				this.ColumnIndex -= 1
-			else if (this.ColumnIndex > 14 and direction = "Down")
+			else if (this.ColumnIndex > 14 and Direction = "Down")
 				this.RowIndex += 1
 
 		}
 		else if (this.RowIndex = 4) {
-			if (this.ColumnIndex = 13 and direction = "Up") 
+			if (this.ColumnIndex = 13 and Direction = "Up") 
 				this.ColumnIndex += 1
-			else if (this.ColumnIndex = 13 and direction = "Down")
+			else if (this.ColumnIndex = 13 and Direction = "Down")
 				this.ColumnIndex -= 1
 		}
 		else if (this.RowIndex = 5) {
-			if (this.ColumnIndex = 13 and direction = "Up") {
+			if (this.ColumnIndex = 13 and Direction = "Up") {
 				this.RowIndex -= 1
 				this.ColumnIndex += 3
 			}
-			else if (this.ColumnIndex = 13 and direction = "Down")
+			else if (this.ColumnIndex = 13 and Direction = "Down")
 				this.ColumnIndex += 1
-			else if (this.ColumnIndex = 12 and direction = "Up")
+			else if (this.ColumnIndex = 12 and Direction = "Up")
 				this.ColumnIndex += 1
-			else if (this.ColumnIndex > 8 and direction = "Down")
+			else if (this.ColumnIndex > 8 and Direction = "Down")
 				this.ColumnIndex -= 4
-			else if (this.ColumnIndex > 3 and direction = "Down")
+			else if (this.ColumnIndex > 3 and Direction = "Down")
 				this.ColumnIndex := 4
 		}
 		else if (this.RowIndex = 6) {
-			if (this.ColumnIndex > 7 and direction = "Down") {
+			if (this.ColumnIndex > 7 and Direction = "Down") {
 				this.ColumnIndex += 5
 			}
-			else if (this.ColumnIndex > 4 and (direction = "Up" or direction = "Down")) {
+			else if (this.ColumnIndex > 4 and (Direction = "Up" or Direction = "Down")) {
 				this.ColumnIndex += 4
 			}
-			else if (this.ColumnIndex = 4 and (direction = "Up" or direction = "Down")) {
+			else if (this.ColumnIndex = 4 and (Direction = "Up" or Direction = "Down")) {
 				this.ColumnIndex := 6
 			}
 		}
 		return
 	}
 
-    UpdateGraphics(obj, Colour){
-        GuiControl, OSK: +C%Colour%, % obj.Progress
+    UpdateGraphics(Obj, Colour){
+        GuiControl, % "OSK: +C" Colour, % Obj.Progress
         GuiControl, OSK: +Redraw, % obj.Text
-		obj.Colour := Colour
+		Obj.Colour := Colour
         Return
     }
 }
