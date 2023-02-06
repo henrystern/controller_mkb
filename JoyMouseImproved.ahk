@@ -2,7 +2,7 @@
 #SingleInstance
 SendMode Input
 SetWorkingDir %A_ScriptDir%
-SetTitleMatchMode,2
+SetTitleMatchMode, 1 ; important for OSK
 SetMouseDelay, -1
 SetBatchLines, -1
 Process, Priority,, H
