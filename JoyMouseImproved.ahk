@@ -40,7 +40,34 @@ Hotkey, % Session.JoystickNumber . "Joy2", J2
 Hotkey, % Session.JoystickNumber . "Joy3", J3
 Hotkey, % Session.JoystickNumber . "Joy4", J4
 Hotkey, % Session.JoystickNumber . "Joy5", J5
+
 2Joy8::Reload ; for development
+*Ins::keyboard.toggle() ; for development
+^r::Reload ; for development
+
+#If, keyboard.isActive()
+
+*Up::keyboard.changeIndex("Up")
+	
+*Down::keyboard.changeIndex("Down")
+	
+*Left::keyboard.changeIndex("Left")
+
+*Right::keyboard.changeIndex("Right")
+
+*Enter::
+	if (not keyboard.isActive() and not keyboard.RowIndex) {
+		SendInput, {Enter}
+		return
+	}
+    k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+	if (k = "LShift" or k = "LCtrl" or k = "LAlt" or k = "LWin" or k = "RShift" or k = "RCtrl" or k = "RAlt" or k = "RWin" or k = "Caps")
+		keyboard.SendModifier(k)
+	else
+		keyboard.SendPress(k)
+	Return
+
+#If
 
 ; A
 J1:
@@ -58,12 +85,15 @@ J2:
 
 ; X
 J3:
-	if not keyboard.isActive() {
-		Send, {Enter}
+	if (not keyboard.isActive() and not keyboard.RowIndex) {
+		SendInput, {Enter}
 		Return
 	}
-    k := keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex].Content
-    keyboard.SendPress(k)
+    k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+	if (k = "LShift" or k = "LCtrl" or k = "LAlt" or k = "LWin" or k = "RShift" or k = "RCtrl" or k = "RAlt" or k = "RWin" or k = "Caps")
+		keyboard.SendModifier(k)
+	else
+		keyboard.SendPress(k)
 	return
 
 ; Y
@@ -73,9 +103,9 @@ J4:
 
 ; LB
 J5:
-	Send {Alt down}{Tab}
+	SendInput {Alt down}{Tab}
 	KeyWait, % A_ThisHotkey
-	Send {Alt up}
+	SendInput {Alt up}
 	Return
 
 DPad() {
@@ -102,23 +132,23 @@ DPad() {
 	}
 	else if (JoyZ < 60) {
 		if left
-			Send {Left}
+			SendInput {Left}
 		else if up
-			Send {Up}
+			SendInput {Up}
 		else if down
-			Send {Down}
+			SendInput {Down}
 		else if right
-			Send {Right}
+			SendInput {Right}
 	} 
 	else {
 		if left
-			Send ^+{Tab}
+			SendInput ^+{Tab}
 		else if up
-			Send ^t
+			SendInput ^t
 		else if down
-			Send ^w
+			SendInput ^w
 		else if right
-			Send ^{Tab}
+			SendInput ^{Tab}
 	}
 	Sleep, 200
 	return
@@ -148,20 +178,20 @@ Class MouseControls
 			return
 
 		if (JoyR > Session.JoyThresholdUpper) {
-			Send {WheelDown}
+			SendInput {WheelDown}
 		}
 
 		if (JoyR < Session.JoyThresholdLower) {
-			Send {WheelUp}
+			SendInput {WheelUp}
 		}
 
 		GetKeyState, JoyU, % Session.JoyStickNumber "JoyU"
 		if (JoyU > Session.JoyThresholdUpper) {
-			send {WheelRight}
+			SendInput {WheelRight}
 		}
 
 		if (JoyU < Session.JoyThresholdLower) {
-			Send {WheelLeft}
+			SendInput {WheelLeft}
 		}
 
 		return
@@ -251,21 +281,19 @@ Class OSK
 	__new() {
 		this.enabled := False
 
-        ; start at h
-		this.ColumnIndex := 7
-		this.RowIndex := 4
-
-		this.Handles := []
+		this.Keys := []
 		this.Controls := []
+		this.Modifiers := {"LShift": False, "LCtrl": False, "LWin": False, "LAlt": False, "RShift": False, "RCtrl": False, "RWin": False, "RAlt": False, "Caps": False}
 
 		this.background := "010409"
 		this.button_colour := "0d1117" 
 		this.button_outline_colour := "0d1117" 
 		this.active_button_colour := "1b1a20" 
+		this.toggled_button_colour := "D29922"
 		this.text_colour := "8b949e"
 
 		this.layout := []
-        ; row 1- format is ["Text", width, offset]
+        ; row 1- format is ["Text", width:=45, offset:=2]
         this.layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrScn",60,10],["ScrLk",60],["Pause",60] ])
         ; row 2
 		this.layout.Push([ ["~", 30],["! 1"],["@ 2"],["# 3"],["$ 4"],["% 5"],["^ 6"],["&& 7"],["* 8"],["( 9"],[") 0"],["_ -"],["+ ="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
@@ -274,14 +302,20 @@ Class OSK
         ; row 4
 		this.layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],[": `;"],[""" '"],["Enter",77] ])
         ; row 5
-		this.layout.Push([ ["Shift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["Shift",94],["↑",60,72] ])
+		this.layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["RShift",94],["↑",60,72] ])
         ; row 6
-		this.layout.Push([ ["Ctrl",60],["Win",60],["Alt",60],[" ",222],["Alt",60],["Win",60],["App",60],["Ctrl",60],["←",60,10],["↓",60],["→",60] ])
+		this.layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],[" ",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["←",60,10],["↓",60],["→",60] ])
 
-		this.PrettyName := { " ":"Space", Caps:"CapsLock", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
+		this.PrettyName := { " ":"Space", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
 
 		this.make()
 	}
+
+    SetTimer(timer_id, period) {
+        timer := this[timer_id]
+        SetTimer % timer, % period
+		return
+    }
 
 	make() {
 		Gui, OSK: +AlwaysOnTop -DPIScale +Owner -Caption +E0x08000000 
@@ -299,33 +333,40 @@ Class OSK
                 j := j = "" ? "xm" : i=1 ? "xm y+2" : "x+" d
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
-                Gui, OSK:Add, Text, % j " c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndthwnd gHandleClick " SS_CenterTextInBox, % v.1
-                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.button_outline_colour " c" this.button_colour " hwndphwnd", 100
-                Gui, OSK:Add, Text, % "xp yp c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtthwnd " SS_CenterTextInBox, % v.1
+                Gui, OSK:Add, Text, % j " c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleClick " SS_CenterTextInBox, % v.1
+                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.button_outline_colour " c" this.button_colour " hwndp", 100
+                Gui, OSK:Add, Text, % "xp yp c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % v.1
 
-
-                this.Handles[thwnd] := [index, i]
-                this.Controls[index, i] := {Progress: phwnd, Text: tthwnd, Label: HandlePress, Content: v.1}
+				this.Keys[v.1] := [index, i]
+                this.Controls[index, i] := {Progress: p, Text: topt, Label: HandlePress}
 			}
 		}
 		Return
 
 		HandleClick:
-			keyboard.UpdateGraphics(keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.button_colour)
-			GuiControlGet, bottomt, hwnd, % A_GuiControl
-			keyboard.RowIndex := keyboard.Handles[bottomt][1]
-			keyboard.ColumnIndex := keyboard.Handles[bottomt][2]
-			; msgbox % bottomt ", " keyboard.RowIndex ", " keyboard.ColumnIndex
-			keyboard.UpdateGraphics(keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.active_button_colour)
-			keyboard.SendPress(A_GuiControl)	
+			if (A_GuiControl = "LShift" or A_GuiControl = "LCtrl" or A_GuiControl = "LAlt" or A_GuiControl = "LWin" or A_GuiControl = "RShift" or A_GuiControl = "RCtrl" or A_GuiControl = "RAlt" or A_GuiControl = "RWin" or A_GuiControl = "Caps") {
+				keyboard.SendModifier(A_GuiControl)
+			}
+			else {
+				ClickedRow := keyboard.Keys[A_GuiControl][1]
+				ClickedColumn := keyboard.Keys[A_GuiControl][2]
+				keyboard.UpdateGraphics(keyboard.Controls[ClickedRow, ClickedColumn] , keyboard.active_button_colour)
+				keyboard.SendPress(A_GuiControl)
+
+				Sleep, 100
+				keyboard.UpdateGraphics(keyboard.Controls[ClickedRow, ClickedColumn] , keyboard.button_colour)
+			}
 			return
 	}
 
 	show() {
 		this.enabled := True
+		; reset keyboard colors
 		keyboard.UpdateGraphics( keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.button_colour )
-		this.ColumnIndex := 7
-		this.RowIndex := 4
+
+		; start at h
+		this.ColumnIndex := 0
+		this.RowIndex := 0
 
 		CurrentMonitorIndex:=GetCurrentMonitorIndex()
 		DetectHiddenWindows On
@@ -340,35 +381,66 @@ Class OSK
 
 		Gui, OSK:Show, % "x" GUI_X " y" GUI_Y " NA", On-Screen Keyboard
 
+        this.MonitorModifier := ObjBindMethod(this, "MonitorModifiers")
+		this.SetTimer("MonitorModifier", 30)
+
 		Return
 
 
 	}
 
-	SendPress(k) {
-		if k in Shift,Ctrl,Win,Alt
-		{
-			v := k="Win" ? "LWin" : k
-			GuiControlGet, isEnabled, OSK: Enabled, %k%
-			GuiControl, OSK: Disable%isEnabled%, %k%
-			if (!isEnabled)
-			SendInput, {Blind}{%v%}
-			return
+	SendModifier(k) {
+		ModifierRow := this.Keys[k][1]
+		ModifierColumn := this.Keys[k][2]
+		if (k = "Caps") {
+			modifier_on := GetKeyState("CapsLock", "T")
+			if modifier_on
+				SetCapsLockState, Off
+			else
+				SetCapsLockState, On
 		}
+		else {
+			modifier_on := GetKeyState(k)
+			if (modifier_on) {
+				SendInput, % "{" k " up}"
+			}
+			else {
+				SendInput, % "{" k " down}"
+			}
+		}
+		return
+	}
+
+	MonitorModifiers() {
+		For mod, waiting in this.Modifiers {
+			if (mod = "Caps")
+				modifier_on := GetKeyState("CapsLock", "T")
+			else
+				modifier_on := GetKeyState(mod)
+			ModifierRow := this.Keys[mod][1]
+			ModifierColumn := this.Keys[mod][2]
+			if (modifier_on) {
+				this.Modifiers[mod] := True
+				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.toggled_button_colour )
+			}
+			else if (not modifier_on and waiting)  {
+				this.Modifiers[mod] := False
+				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.button_colour )
+			}
+		}
+		Return
+	}
+
+	SendPress(k) {
 		s := InStr(k," ") ? SubStr(k,0) : k
 		s := (this.PrettyName[s]) ? this.PrettyName[s] : s
 		s := "{" s "}"
-		For i,k in StrSplit("Shift,Ctrl,Win,Alt", ",")
-		{
-			GuiControlGet, isEnabled, OSK: Enabled, %k%
-			if (!isEnabled)
-			{
-			GuiControl, OSK: Enable, %k%
-			v:=k="Win" ? "LWin" : k
-			s = {%v% Down}%s%{%v% Up}
-			}
-		}
 		SendInput, {Blind}%s%
+		For mod, _ in this.Modifiers {
+			modifier_on := GetKeyState(mod)
+			if (modifier_on)
+				SendInput, % "{" mod " up}"
+		}
 		Return
 	}
 
@@ -393,7 +465,12 @@ Class OSK
 	}
 
     changeIndex(direction) {
-        this.UpdateGraphics( keyboard.Controls[this.RowIndex, this.ColumnIndex] , this.button_colour)
+		if (not this.RowIndex) {
+			this.RowIndex := 4
+			this.ColumnIndex := 7
+		}
+
+        this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
 		this.handleChangeIndex(direction)
         if (direction = "Up") {
 			if this.RowIndex = 1
@@ -415,7 +492,7 @@ Class OSK
         if (direction = "Right") {
             this.ColumnIndex := mod(this.ColumnIndex, this.Controls[this.RowIndex].Length()) + 1
         }
-        this.UpdateGraphics( keyboard.Controls[this.RowIndex, this.ColumnIndex] , this.active_button_colour)
+        this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.active_button_colour)
     }
 
 	handleChangeIndex(direction) {
