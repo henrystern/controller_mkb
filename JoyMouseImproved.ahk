@@ -283,13 +283,13 @@ Class OSK
 
 		this.Keys := []
 		this.Controls := []
-		this.Modifiers := {"LShift": False, "LCtrl": False, "LWin": False, "LAlt": False, "RShift": False, "RCtrl": False, "RWin": False, "RAlt": False, "Caps": False}
+		this.Modifiers := ["LShift", "LCtrl", "LWin", "LAlt", "RShift", "RCtrl", "RWin", "RAlt", "Caps"]
 
 		this.background := "010409"
 		this.button_colour := "0d1117" 
 		this.button_outline_colour := "0d1117" 
 		this.active_button_colour := "1b1a20" 
-		this.toggled_button_colour := "D29922"
+		this.toggled_button_colour := "7c2a2a"
 		this.text_colour := "8b949e"
 
 		this.layout := []
@@ -338,7 +338,7 @@ Class OSK
                 Gui, OSK:Add, Text, % "xp yp c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % v.1
 
 				this.Keys[v.1] := [index, i]
-                this.Controls[index, i] := {Progress: p, Text: topt, Label: HandlePress}
+                this.Controls[index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.button_colour}
 			}
 		}
 		Return
@@ -361,7 +361,7 @@ Class OSK
 
 	show() {
 		this.enabled := True
-		; reset keyboard colors
+		; reset keyboard colours
 		keyboard.UpdateGraphics( keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex] , keyboard.button_colour )
 
 		; start at h
@@ -412,19 +412,17 @@ Class OSK
 	}
 
 	MonitorModifiers() {
-		For mod, waiting in this.Modifiers {
+		For _, mod in this.Modifiers {
 			if (mod = "Caps")
 				modifier_on := GetKeyState("CapsLock", "T")
 			else
 				modifier_on := GetKeyState(mod)
 			ModifierRow := this.Keys[mod][1]
 			ModifierColumn := this.Keys[mod][2]
-			if (modifier_on) {
-				this.Modifiers[mod] := True
-				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.toggled_button_colour )
+			if (modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour != this.toggled_button_colour) {
+				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.toggled_button_colour)
 			}
-			else if (not modifier_on and waiting)  {
-				this.Modifiers[mod] := False
+			else if (not modifier_on and this.Controls[ModifierRow, ModifierColumn].Colour = this.toggled_button_colour) {
 				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.button_colour )
 			}
 		}
@@ -436,7 +434,7 @@ Class OSK
 		s := (this.PrettyName[s]) ? this.PrettyName[s] : s
 		s := "{" s "}"
 		SendInput, {Blind}%s%
-		For mod, _ in this.Modifiers {
+		For _, mod in this.Modifiers {
 			modifier_on := GetKeyState(mod)
 			if (modifier_on)
 				SendInput, % "{" mod " up}"
@@ -469,8 +467,8 @@ Class OSK
 			this.RowIndex := 4
 			this.ColumnIndex := 7
 		}
-
-        this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
+		if (keyboard.Controls[this.RowIndex, this.ColumnIndex].Colour = this.active_button_colour)
+			this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
 		this.handleChangeIndex(direction)
         if (direction = "Up") {
 			if this.RowIndex = 1
@@ -492,7 +490,8 @@ Class OSK
         if (direction = "Right") {
             this.ColumnIndex := mod(this.ColumnIndex, this.Controls[this.RowIndex].Length()) + 1
         }
-        this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.active_button_colour)
+		if (keyboard.Controls[this.RowIndex, this.ColumnIndex].Colour = this.button_colour)
+			this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.active_button_colour)
     }
 
 	handleChangeIndex(direction) {
@@ -549,9 +548,10 @@ Class OSK
 		return
 	}
 
-    UpdateGraphics( obj , Color ){
-        GuiControl, OSK: +C%Color%, % obj.Progress
+    UpdateGraphics( obj , Colour ){
+        GuiControl, OSK: +C%Colour%, % obj.Progress
         GuiControl, OSK: +Redraw, % obj.Text
+		obj.Colour := Colour
         Return
     }
 }
