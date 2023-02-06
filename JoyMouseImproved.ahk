@@ -304,20 +304,20 @@ Class OSK
 		SS_CenterTextInBox := 0x200 ; styling adjustment
 		For Index, Row in this.Layout {
             if Index <= 2
-                j := ""
+                RelativePosition := ""
 
-			For i,v in Row {
-                w := v.2 ? v.2 : 45 
-                d := v.3 ? v.3 : 2
-                j := j = "" ? "xm" : i=1 ? "xm y+2" : "x+" d
+			For i, Button in Row {
+                Width := Button.2 ? Button.2 : 45 
+                HorizontalOffset := Button.3 ? Button.3 : 2
+                RelativePosition := RelativePosition = "" ? "xm" : i=1 ? "xm y+2" : "x+" HorizontalOffset
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
-                Gui, OSK:Add, Text, % j " c" this.TextColour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % v.1
-                Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.ButtonOutlineColour " c" this.ButtonColour " hwndp", 100
-                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % v.1
+                Gui, OSK:Add, Text, % RelativePosition " c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % Button.1
+                Gui, OSK:Add, Progress, % "xp yp w" Width " h" 30 " Disabled Background" this.ButtonOutlineColour " c" this.ButtonColour " hwndp", 100
+                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % Button.1
 
-				this.Keys[v.1] := [index, i]
-                this.Controls[index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.ButtonColour}
+				this.Keys[Button.1] := [Index, i]
+                this.Controls[Index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.ButtonColour}
 			}
 		}
 		Return
