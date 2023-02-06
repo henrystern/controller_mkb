@@ -29,6 +29,10 @@ class State
 
 Global Session := new State
 Global keyboard := new OSK 
+HandleOSKClick: ; because GUI can't call a method
+	keyboard.HandleOSKClick()
+	return
+
 Global MouseController := new MouseControls()
 
 SetTimer, DPad, % Session.DPadDelay
@@ -236,46 +240,8 @@ Class MouseControls
     }
 }
 
-/*
---------------------------------
-On-Screen Keyboard -- OSK() v1.5  By FeiYue
 
-This is a small tool similar to the WinXP's On-Screen Keyboard.
 
---------------------------------
-*/
-
-; for centering keyboard on screen
-GetCurrentMonitorIndex() {
-	CoordMode, Mouse, Screen
-	MouseGetPos, mx, my
-	SysGet, monitorsCount, 80
-
-	Loop %monitorsCount%{
-		SysGet, monitor, Monitor, %A_Index%
-		if (monitorLeft <= mx && mx <= monitorRight && monitorTop <= my && my <= monitorBottom){
-			Return A_Index
-			}
-		}
-		Return 1
-}
-
-CoordXCenterScreen(WidthOfGUI,ScreenNumber) {
-	SysGet, Mon1, Monitor, %ScreenNumber%
-		return ((Mon1Right-Mon1Left - WidthOfGUI) / 2) + Mon1Left
-}
-
-CoordYCenterScreen(HeightofGUI,ScreenNumber) {
-	SysGet, Mon1, Monitor, %ScreenNumber%
-		return (Mon1Bottom - 80 - HeightofGUI)
-}
-
-GetClientSize(hwnd, ByRef w, ByRef h) {
-    VarSetCapacity(rc, 16)
-    DllCall("GetClientRect", "uint", hwnd, "uint", &rc)
-    w := NumGet(rc, 8, "int")
-    h := NumGet(rc, 12, "int")
-}
 
 Class OSK
 ; Adapted from feiyue's script: https://www.autohotkey.com/boards/viewtopic.php?t=58366 
@@ -346,7 +312,7 @@ Class OSK
                 j := j = "" ? "xm" : i=1 ? "xm y+2" : "x+" d
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
-                Gui, OSK:Add, Text, % j " c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleClick " SS_CenterTextInBox, % v.1
+                Gui, OSK:Add, Text, % j " c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % v.1
                 Gui, OSK:Add, Progress, % "xp yp w" w " h" 30 " Disabled Background" this.button_outline_colour " c" this.button_colour " hwndp", 100
                 Gui, OSK:Add, Text, % "xp yp c" this.text_colour " w" w " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % v.1
 
@@ -355,41 +321,74 @@ Class OSK
 			}
 		}
 		Return
+	}
 
-		HandleClick:
-			if (keyboard.isModifier(A_GuiControl)) {
-				keyboard.SendModifier(A_GuiControl)
-			}
-			else {
-				keyboard.SendPress(A_GuiControl)
-			}
-			return
+	HandleOSKClick() {
+		if (this.isModifier(A_GuiControl)) {
+			this.SendModifier(A_GuiControl)
+		}
+		else {
+			this.SendPress(A_GuiControl)
+		}
+		return
 	}
 
 	show() {
 		this.enabled := True
 
 		; reset active key
-		keyboard.UpdateGraphics(keyboard.Controls[keyboard.RowIndex, keyboard.ColumnIndex], keyboard.button_colour)
+		this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
 		this.ColumnIndex := 0
 		this.RowIndex := 0
 
-		CurrentMonitorIndex:=GetCurrentMonitorIndex()
+		CurrentMonitorIndex := this.GetCurrentMonitorIndex()
 		DetectHiddenWindows On
 		Gui, OSK: +LastFound
 		Gui, OSK:Show, Hide
 		GUI_Hwnd := WinExist()
-		GetClientSize(GUI_Hwnd,GUI_Width,GUI_Height)
+		this.GetClientSize(GUI_Hwnd,GUI_Width,GUI_Height)
 		DetectHiddenWindows Off
 
-		GUI_X:=CoordXCenterScreen(GUI_Width,CurrentMonitorIndex)
-		GUI_Y:=CoordYCenterScreen(GUI_Height,CurrentMonitorIndex)
+		GUI_X := this.CoordXCenterScreen(GUI_Width,CurrentMonitorIndex)
+		GUI_Y := this.CoordYCenterScreen(GUI_Height,CurrentMonitorIndex)
 
 		Gui, OSK:Show, % "x" GUI_X " y" GUI_Y " NA", On-Screen Keyboard
 
 		this.SetTimer("MonitorKeyPresses", 30)
 
 		Return
+	}
+
+	; for centering keyboard on screen
+	GetCurrentMonitorIndex() {
+		CoordMode, Mouse, Screen
+		MouseGetPos, mx, my
+		SysGet, monitorsCount, 80
+
+		Loop %monitorsCount%{
+			SysGet, monitor, Monitor, %A_Index%
+			if (monitorLeft <= mx && mx <= monitorRight && monitorTop <= my && my <= monitorBottom){
+				Return A_Index
+				}
+			}
+			Return 1
+	}
+
+	CoordXCenterScreen(WidthOfGUI,ScreenNumber) {
+		SysGet, Mon1, Monitor, %ScreenNumber%
+			return ((Mon1Right-Mon1Left - WidthOfGUI) / 2) + Mon1Left
+	}
+
+	CoordYCenterScreen(HeightofGUI,ScreenNumber) {
+		SysGet, Mon1, Monitor, %ScreenNumber%
+			return (Mon1Bottom - 80 - HeightofGUI)
+	}
+
+	GetClientSize(hwnd, ByRef w, ByRef h) {
+		VarSetCapacity(rc, 16)
+		DllCall("GetClientRect", "uint", hwnd, "uint", &rc)
+		w := NumGet(rc, 8, "int")
+		h := NumGet(rc, 12, "int")
 	}
 
 	SendModifier(k) {
@@ -503,8 +502,8 @@ Class OSK
 			this.ColumnIndex := 7
 		}
 
-		if (keyboard.Controls[this.RowIndex, this.ColumnIndex].Colour != this.toggled_button_colour)
-			this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
+		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.toggled_button_colour)
+			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.button_colour)
 
 		this.handleChangeIndex(direction)
 
@@ -529,8 +528,8 @@ Class OSK
             this.ColumnIndex := mod(this.ColumnIndex, this.Controls[this.RowIndex].Length()) + 1
         }
 
-		if (keyboard.Controls[this.RowIndex, this.ColumnIndex].Colour != this.toggled_button_colour)
-			this.UpdateGraphics(keyboard.Controls[this.RowIndex, this.ColumnIndex], this.active_button_colour)
+		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.toggled_button_colour)
+			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.active_button_colour)
     }
 
 	handleChangeIndex(direction) {
