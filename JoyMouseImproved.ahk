@@ -62,9 +62,18 @@ DeactivateJoyMouse() {
 
 ; A
 J1:
-	Click, left, down
-	KeyWait % A_ThisHotkey
-	Click, left, up
+	if (not keyboard.Enabled or not keyboard.RowIndex) {
+		Click, left, down
+		KeyWait % A_ThisHotkey
+		Click, left, up
+	}
+	else {
+		k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+		if (keyboard.IsModifier(k))
+			keyboard.SendModifier(k)
+		else
+			keyboard.SendPress(k)
+	}
 	Return
 
 ; B
@@ -76,16 +85,7 @@ J2:
 
 ; X
 J3:
-	if (not keyboard.Enabled or not keyboard.RowIndex) {
-		SendInput, {Enter}
-	}
-	else {
-		k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-		if (keyboard.IsModifier(k))
-			keyboard.SendModifier(k)
-		else
-			keyboard.SendPress(k)
-	}
+	SendInput, {Enter}
 	Return
 
 ; Y
@@ -297,6 +297,7 @@ Class OSK
         ; row 6
 		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Down",60,10],["Left",60],["Right",60] ])
 
+		; Optionally sets alternate text for the button actions named in this.Layout
 		this.PrettyName := { "PrintScreen": "PrSn", "ScrollLock": "ScLk"
 								, 1: "! 1", 2: "@ 2", 3: "# 3", 4: "$ 4", 5: "% 5", 6: "^ 6", 7: "&& 7", 8: "* 8", 9: "( 9", 0: ") 0", "-": "_ -", "=": "+ ="
 								, "[": "{ [", "]": "} ]", "\": "| \"
