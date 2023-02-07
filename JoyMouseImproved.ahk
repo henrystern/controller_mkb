@@ -16,63 +16,49 @@ class State
 		this.JoyThresholdLower := 50 - 20
 		this.JoyThresholdUpper := 50 + 20
 
-		this.MouseTopSpeed := 10
-		this.JoyZBoost := 3 ; Affects how much holding JoyZ increases mouse speed
+		this.MouseTopSpeed := 5
+		this.JoyZBoost := 5 ; Affects how much holding JoyZ increases mouse speed
 
 		this.MouseMoveDelay := 10
 		this.ScrollWheelDelay := 30
 		this.DPadDelay := 30
 
-		this.active := True
+		this.Active := True
 	}
 }
 
 Global Session := new State
-Global keyboard := new OSK 
-HandleOSKClick: ; because GUI can't call a method
-	keyboard.HandleOSKClick()
-	return
-
+Global keyboard
+initKeyboard(keyboard)
 Global MouseController := new MouseControls()
 
-SetTimer, DPad, % Session.DPadDelay
-MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
-MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+; Hold Back to toggle JoyMouse
+Hotkey, % Session.JoystickNumber . "Joy7", J7, On
 
-Hotkey, % Session.JoystickNumber . "Joy1", J1
-Hotkey, % Session.JoystickNumber . "Joy2", J2
-Hotkey, % Session.JoystickNumber . "Joy3", J3
-Hotkey, % Session.JoystickNumber . "Joy4", J4
-Hotkey, % Session.JoystickNumber . "Joy5", J5
+if Session.Active {
+	ActivateJoyMouse()
+	SetTimer, DPad, % Session.DPadDelay
+	MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
+	MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+}
 
-2Joy8::Reload ; for development
-*Ins::keyboard.Toggle() ; for development
-^r::Reload ; for development
+ActivateJoyMouse() {
+	Hotkey, % Session.JoystickNumber . "Joy1", J1, On
+	Hotkey, % Session.JoystickNumber . "Joy2", J2, On
+	Hotkey, % Session.JoystickNumber . "Joy3", J3, On
+	Hotkey, % Session.JoystickNumber . "Joy4", J4, On
+	Hotkey, % Session.JoystickNumber . "Joy5", J5, On
+	Hotkey, % Session.JoystickNumber . "Joy6", J6, On
+}
 
-#If, keyboard.Enabled
-
-*Up::keyboard.ChangeIndex("Up")
-	
-*Down::keyboard.ChangeIndex("Down")
-	
-*Left::keyboard.ChangeIndex("Left")
-
-*Right::keyboard.ChangeIndex("Right")
-
-*Enter::
-	if (not keyboard.Enabled and not keyboard.RowIndex) {
-		SendInput, {Enter}
-	}
-	else {
-		k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-		if (keyboard.IsModifier(k))
-			keyboard.SendModifier(k)
-		else
-			keyboard.SendPress(k)
-	}
-	Return
-
-#If
+DeactivateJoyMouse() {
+	Hotkey, % Session.JoystickNumber . "Joy1", J1, Off
+	Hotkey, % Session.JoystickNumber . "Joy2", J2, Off
+	Hotkey, % Session.JoystickNumber . "Joy3", J3, Off
+	Hotkey, % Session.JoystickNumber . "Joy4", J4, Off
+	Hotkey, % Session.JoystickNumber . "Joy5", J5, Off
+	Hotkey, % Session.JoystickNumber . "Joy6", J6, Off
+}
 
 ; A
 J1:
@@ -90,7 +76,7 @@ J2:
 
 ; X
 J3:
-	if (not keyboard.Enabled and not keyboard.RowIndex) {
+	if (not keyboard.Enabled or not keyboard.RowIndex) {
 		SendInput, {Enter}
 	}
 	else {
@@ -109,10 +95,43 @@ J4:
 
 ; LB
 J5:
-	SendInput {Alt down}{Tab}
-	KeyWait, % A_ThisHotkey
-	SendInput {Alt up}
+	if (not keyboard.Enabled) {
+		SendInput {Alt down}{Tab}
+		KeyWait, % A_ThisHotkey
+		SendInput {Alt up}
+	}
+	else {
+		keyboard.SendPress("BS")
+	}
 	Return
+
+; RB
+J6:
+	if (keyboard.Enabled)
+		keyboard.SendPress(" ")
+
+; Back
+J7:
+	KeyWait % A_ThisHotkey
+    If (A_TimeSinceThisHotkey > 600) {
+        If not Session.Active {
+			Session.active := not Session.Active
+            ComObjCreate("SAPI.SpVoice").Speak("Activated")
+			SetTimer, DPad, % Session.DPadDelay
+			MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
+			MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+			ActivateJoyMouse()
+        }
+        Else {
+			Session.active := not Session.Active
+            ComObjCreate("SAPI.SpVoice").Speak("Disabled")
+			DeactivateJoyMouse()
+			SetTimer, DPad, off
+			MouseController.SetTimer("cursor_timer", "off")
+			MouseController.SetTimer("scroll_wheel_timer", "off")
+        }
+    }
+    Return
 
 DPad() {
 	GetKeyState, JoyPOV, % Session.JoyStickNumber "JoyPov"
@@ -179,15 +198,11 @@ Class MouseControls
     MoveScrollWheel() {
 		GetKeyState, JoyR, % Session.JoyStickNumber "JoyR"
 
-		; check joystick is on
-		if not JoyR
-			return
-
 		if (JoyR > Session.JoyThresholdUpper) {
 			SendInput {WheelDown}
 		}
 
-		if (JoyR < Session.JoyThresholdLower) {
+		if (JoyR >= 0 and JoyR < Session.JoyThresholdLower) {
 			SendInput {WheelUp}
 		}
 
@@ -229,7 +244,7 @@ Class MouseControls
 		if (x != 0 or y != 0){
 			JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
 
-			; TODO check
+			; So LT doesn't reverse direction
 			if JoyZ > 45
 				JoyZ := 50
 
@@ -240,8 +255,12 @@ Class MouseControls
     }
 }
 
-
-
+initKeyboard(byref Name) {
+	Name := new OSK(Name)
+	HandleOSKClick:
+		Name.HandleOSKClick()
+		return
+}
 
 Class OSK
 ; Adapted from feiyue's script: https://www.autohotkey.com/boards/viewtopic.php?t=58366 
@@ -278,6 +297,7 @@ Class OSK
         ; row 6
 		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],[" ",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["←",60,10],["↓",60],["→",60] ])
 
+		; TODO change so buttons are made pretty but stored ugly
 		this.PrettyName := { " ":"Space", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
 
 		this.Make()
