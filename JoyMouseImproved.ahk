@@ -295,14 +295,14 @@ Class OSK
         ; row 5
 		this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
         ; row 6
-		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Down",60,10],["Left",60],["Right",60] ])
+		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
 
 		; Optionally sets alternate text for the button actions named in this.Layout
-		this.PrettyName := { "PrintScreen": "PrSn", "ScrollLock": "ScLk"
-								, 1: "! 1", 2: "@ 2", 3: "# 3", 4: "$ 4", 5: "% 5", 6: "^ 6", 7: "&& 7", 8: "* 8", 9: "( 9", 0: ") 0", "-": "_ -", "=": "+ ="
-								, "[": "{ [", "]": "} ]", "\": "| \"
-								, "`;": ": `;", "'": """ '"
-								, "LShift": "Shift", ",": "<", ".": "> .", "/": "? /", "RShift": "Shift"
+		this.PrettyName := { "PrintScreen": "Prt Scr", "ScrollLock": "Scr Lk"
+								, 1: "1 !", 2: "2 @", 3: "3 #", 4: "4 $", 5: "5 %", 6: "6 ^", 7: "7 &&", 8: "8 *", 9: "9 (", 0: "0 )", "-": "- _", "=": "= +", "BS": "←", "PgUp": "Pg Up", "PgDn": "Pg Dn"
+								, "[": "[ {", "]": "] }", "\": "\ |"
+								, "`;": "`; :", "'": "' """
+								, "LShift": "Shift", ",": ", <", ".": ". >", "/": "/ ?", "RShift": "Shift"
 								, "LCtrl": "Ctrl", "LWin": "Win", "LAlt": "Alt", "Space": " ", "RAlt": "Alt", "RWin": "Win", "AppsKey": "App", "RCtrl": "Ctrl", "Up": "↑", "Down": "↓", "Left": "←", "Right": "→"}
 
 		this.Make()
@@ -323,7 +323,7 @@ Class OSK
 
 	Make() {
 		Gui, OSK: +AlwaysOnTop -DPIScale +Owner -Caption +E0x08000000 
-		Gui, OSK: Font, s12
+		Gui, OSK: Font, s12, Verdana
 		Gui, OSK: Margin, 10, 10
 		Gui, OSK: Color, % this.Background
 		SS_CenterTextInBox := 0x200 ; styling adjustment
@@ -340,7 +340,7 @@ Class OSK
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
                 Gui, OSK:Add, Text, % RelativePosition " c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % Button.1
                 Gui, OSK:Add, Progress, % "xp yp w" Width " h" 30 " Disabled Background" this.ButtonOutlineColour " c" this.ButtonColour " hwndp", 100
-                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % ButtonText
+                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % ButtonText ; displays the pretty name
 
 				this.Keys[Button.1] := [Index, i]
                 this.Controls[Index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.ButtonColour}
