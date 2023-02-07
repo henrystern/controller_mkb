@@ -189,12 +189,11 @@ Class MouseControls
 
     MoveScrollWheel() {
 		GetKeyState, JoyR, % Session.JoyStickNumber "JoyR"
-
 		if (JoyR > Session.JoyThresholdUpper) {
 			SendInput {WheelDown}
 		}
 
-		if (JoyR >= 0 and JoyR < Session.JoyThresholdLower) {
+		if (JoyR >= 0 and JoyR < Session.JoyThresholdLower) { ; first condition controls for the controller being off
 			SendInput {WheelUp}
 		}
 
@@ -276,14 +275,14 @@ Class OSK
         this.MonitorKeyPresses := ObjBindMethod(this, "MonitorAllKeys") ; can choose between MonitorModifiers and MonitorAllKeys
 
 		this.Layout := []
-        ; row 1- format is ["Text", width:=45, offset:=2]
+        ; row 1- format is ["Text", width:=45, x-offset:=2]
         this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
         ; row 2
 		this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
         ; row 3
 		this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
         ; row 4
-		this.Layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
+		this.Layout.Push([ ["CapsLock",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
         ; row 5
 		this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
         ; row 6
@@ -293,7 +292,7 @@ Class OSK
 		this.PrettyName := { "PrintScreen": "Prt Scr", "ScrollLock": "Scr Lk"
 								, 1: "1 !", 2: "2 @", 3: "3 #", 4: "4 $", 5: "5 %", 6: "6 ^", 7: "7 &&", 8: "8 *", 9: "9 (", 0: "0 )", "-": "- _", "=": "= +", "BS": "←", "PgUp": "Pg Up", "PgDn": "Pg Dn"
 								, "[": "[ {", "]": "] }", "\": "\ |"
-								, "`;": "`; :", "'": "' """
+								, "CapsLock": "Caps", "`;": "`; :", "'": "' """
 								, "LShift": "Shift", ",": ", <", ".": ". >", "/": "/ ?", "RShift": "Shift"
 								, "LCtrl": "Ctrl", "LWin": "Win", "LAlt": "Alt", "Space": " ", "RAlt": "Alt", "RWin": "Win", "AppsKey": "App", "RCtrl": "Ctrl", "Up": "↑", "Down": "↓", "Left": "←", "Right": "→"}
 
@@ -307,7 +306,7 @@ Class OSK
     }
 
 	IsModifier(Key) {
-		if (Key = "LShift" or Key = "LCtrl" or Key = "LAlt" or Key = "LWin" or Key = "RShift" or Key = "RCtrl" or Key = "RAlt" or Key = "RWin" or Key = "Caps")
+		if (Key = "LShift" or Key = "LCtrl" or Key = "LAlt" or Key = "LWin" or Key = "RShift" or Key = "RCtrl" or Key = "RAlt" or Key = "RWin" or Key = "CapsLock" or Key = "ScrollLock")
 			return True
 		else
 			return False
@@ -326,11 +325,11 @@ Class OSK
 			For i, Button in Row {
                 Width := Button.2 ? Button.2 : 45 
                 HorizontalOffset := Button.3 ? Button.3 : 2
-                RelativePosition := RelativePosition = "" ? "xm" : i=1 ? "xm y+2" : "x+" HorizontalOffset
+                RelativePosition := = "" ? "xm" : i=1 ? "xm y+2" : "x+" HorizontalOffset
 				ButtonText := this.PrettyName[Button.1] ? this.PrettyName[Button.1] : Button.1
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
-                Gui, OSK:Add, Text, % RelativePosition " c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % Button.1
+                Gui, OSK:Add, Text, % RelativePosition " c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % Button.1 ; handles the click
                 Gui, OSK:Add, Progress, % "xp yp w" Width " h" 30 " Disabled Background" this.ButtonOutlineColour " c" this.ButtonColour " hwndp", 100
                 Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % ButtonText ; displays the pretty name
 
@@ -412,12 +411,12 @@ Class OSK
 	SendModifier(Key) {
 		ModifierRow := this.Keys[Key][1]
 		ModifierColumn := this.Keys[Key][2]
-		if (Key = "Caps") {
-			ModifierOn := GetKeyState("CapsLock", "T")
+		if (Key = "CapsLock" or Key = "ScrollLock") {
+			ModifierOn := GetKeyState(Key, "T")
 			if ModifierOn
-				SetCapsLockState, Off
+				Set%Key%State, Off
 			else
-				SetCapsLockState, On
+				Set%Key%State, On
 		}
 		else {
 			ModifierOn := GetKeyState(Key)
@@ -433,8 +432,8 @@ Class OSK
 
 	MonitorModifiers() {
 		For _, Modifier in this.Modifiers {
-			if (Modifier = "Caps")
-				ModifierOn := GetKeyState("CapsLock", "T")
+			if (Modifier = "CapsLock" or Key = "ScrollLock")
+				ModifierOn := GetKeyState(Key, "T")
 			else
 				ModifierOn := GetKeyState(Modifier)
 			ModifierRow := this.Keys[Modifier][1]
@@ -456,21 +455,21 @@ Class OSK
 	MonitorAllKeys() {
 		For _, Row in this.Layout {
 			For i, Key in Row {
-				Modifier := Key.1
-				if (Modifier = "Caps")
-					ModifierOn := GetKeyState("CapsLock", "T")
+				Key := Key.1
+				if (Key = "CapsLock" or Key = "ScrollLock")
+					KeyOn := GetKeyState(Key, "T")
 				else
-					ModifierOn := GetKeyState(Modifier)
-				ModifierRow := this.Keys[Modifier][1]
-				ModifierColumn := this.Keys[Modifier][2]
-				if (ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour != this.ToggledButtonColour) {
-					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ToggledButtonColour)
+					KeyOn := GetKeyState(Key)
+				KeyRow := this.Keys[Key][1]
+				KeyColumn := this.Keys[Key][2]
+				if (KeyOn and this.Controls[KeyRow, KeyColumn].Colour != this.ToggledButtonColour) {
+					this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ToggledButtonColour)
 				}
-				else if (not ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour = this.ToggledButtonColour) {
-					if (ModifierRow = this.RowIndex and ModifierColumn = this.ColumnIndex)
-						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ActiveButtonColour)
+				else if (not KeyOn and this.Controls[KeyRow, KeyColumn].Colour = this.ToggledButtonColour) {
+					if (KeyRow = this.RowIndex and KeyColumn = this.ColumnIndex)
+						this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ActiveButtonColour)
 					else
-						this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ButtonColour)
+						this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ButtonColour)
 				}
 			}
 		}
