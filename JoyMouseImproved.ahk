@@ -108,7 +108,7 @@ J5:
 ; RB
 J6:
 	if (keyboard.Enabled)
-		keyboard.SendPress(" ")
+		keyboard.SendPress("Space")
 
 ; Back
 J7:
@@ -285,19 +285,24 @@ Class OSK
 
 		this.Layout := []
         ; row 1- format is ["Text", width:=45, offset:=2]
-        this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrScn",60,10],["ScrLk",60],["Pause",60] ])
+        this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
         ; row 2
-		this.Layout.Push([ ["~", 30],["! 1"],["@ 2"],["# 3"],["$ 4"],["% 5"],["^ 6"],["&& 7"],["* 8"],["( 9"],[") 0"],["_ -"],["+ ="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
+		this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
         ; row 3
-		this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["{ ["],["} ]"],["| \"],["Del",60,10],["End",60],["PgDn",60] ])
+		this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
         ; row 4
-		this.Layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],[": `;"],[""" '"],["Enter",77] ])
+		this.Layout.Push([ ["Caps",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
         ; row 5
-		this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],["< ,"],["> ."],["? /"],["RShift",94],["↑",60,72] ])
+		this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
         ; row 6
-		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],[" ",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["←",60,10],["↓",60],["→",60] ])
+		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Down",60,10],["Left",60],["Right",60] ])
 
-		this.UglyName := { " ":"Space", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
+		this.PrettyName := { "PrintScreen": "PrSn", "ScrollLock": "ScLk"
+								, 1: "! 1", 2: "@ 2", 3: "# 3", 4: "$ 4", 5: "% 5", 6: "^ 6", 7: "&& 7", 8: "* 8", 9: "( 9", 0: ") 0", "-": "_ -", "=": "+ ="
+								, "[": "{ [", "]": "} ]", "\": "| \"
+								, "`;": ": `;", "'": """ '"
+								, "LShift": "Shift", ",": "<", ".": "> .", "/": "? /", "RShift": "Shift"
+								, "LCtrl": "Ctrl", "LWin": "Win", "LAlt": "Alt", "Space": " ", "RAlt": "Alt", "RWin": "Win", "AppsKey": "App", "RCtrl": "Ctrl", "Up": "↑", "Down": "↓", "Left": "←", "Right": "→"}
 
 		this.Make()
 	}
@@ -329,11 +334,12 @@ Class OSK
                 Width := Button.2 ? Button.2 : 45 
                 HorizontalOffset := Button.3 ? Button.3 : 2
                 RelativePosition := RelativePosition = "" ? "xm" : i=1 ? "xm y+2" : "x+" HorizontalOffset
+				ButtonText := this.PrettyName[Button.1] ? this.PrettyName[Button.1] : Button.1
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
                 Gui, OSK:Add, Text, % RelativePosition " c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndbottomt gHandleOSKClick " SS_CenterTextInBox, % Button.1
                 Gui, OSK:Add, Progress, % "xp yp w" Width " h" 30 " Disabled Background" this.ButtonOutlineColour " c" this.ButtonColour " hwndp", 100
-                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % Button.1
+                Gui, OSK:Add, Text, % "xp yp c" this.TextColour " w" Width " h" 30 " -Wrap BackgroundTrans Center hwndtopt " SS_CenterTextInBox, % ButtonText
 
 				this.Keys[Button.1] := [Index, i]
                 this.Controls[Index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.ButtonColour}
@@ -483,9 +489,7 @@ Class OSK
 		SentColumn := this.Keys[Key][2]
 		OldColor := this.Controls[SentRow][SentColumn].Colour
 		this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.SentButtonColour)
-		SendKey := InStr(Key, " ") ? SubStr(Key, 0) : Key
-		SendKey := (this.UglyName[SendKey]) ? this.UglyName[SendKey] : SendKey
-		SendInput, % "{Blind}{" SendKey "}" 
+		SendInput, % "{Blind}{" Key "}" 
 		For _, Modifier in this.Modifiers {
 			ModifierOn := GetKeyState(Modifier)
 			if (ModifierOn)
