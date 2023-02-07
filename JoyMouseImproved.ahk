@@ -36,103 +36,95 @@ Global MouseController := new MouseControls()
 Hotkey, % Session.JoystickNumber . "Joy7", J7, On
 
 if Session.Active {
-	ActivateJoyMouse()
+	ToggleHotKeys("On")
 	SetTimer, DPad, % Session.DPadDelay
 	MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
 	MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
 }
 
-ActivateJoyMouse() {
-	Hotkey, % Session.JoystickNumber . "Joy1", J1, On
-	Hotkey, % Session.JoystickNumber . "Joy2", J2, On
-	Hotkey, % Session.JoystickNumber . "Joy3", J3, On
-	Hotkey, % Session.JoystickNumber . "Joy4", J4, On
-	Hotkey, % Session.JoystickNumber . "Joy5", J5, On
-	Hotkey, % Session.JoystickNumber . "Joy6", J6, On
+ToggleHotKeys(State) {
+	Hotkey, % Session.JoystickNumber . "Joy1", J1, % State
+	Hotkey, % Session.JoystickNumber . "Joy2", J2, % State
+	Hotkey, % Session.JoystickNumber . "Joy3", J3, % State
+	Hotkey, % Session.JoystickNumber . "Joy4", J4, % State
+	Hotkey, % Session.JoystickNumber . "Joy5", J5, % State
+	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
 }
 
-DeactivateJoyMouse() {
-	Hotkey, % Session.JoystickNumber . "Joy1", J1, Off
-	Hotkey, % Session.JoystickNumber . "Joy2", J2, Off
-	Hotkey, % Session.JoystickNumber . "Joy3", J3, Off
-	Hotkey, % Session.JoystickNumber . "Joy4", J4, Off
-	Hotkey, % Session.JoystickNumber . "Joy5", J5, Off
-	Hotkey, % Session.JoystickNumber . "Joy6", J6, Off
-}
+Labels() { ; so the returns don't interrupt the main thread
+	; A
+	J1:
+		if (not keyboard.Enabled or not keyboard.RowIndex) {
+			Click, left, down
+			KeyWait % A_ThisHotkey
+			Click, left, up
+		}
+		else {
+			k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+			if (keyboard.IsModifier(k))
+				keyboard.SendModifier(k)
+			else
+				keyboard.SendPress(k)
+		}
+		Return
 
-; A
-J1:
-	if (not keyboard.Enabled or not keyboard.RowIndex) {
-		Click, left, down
+	; B
+	J2:
+		Click, right, down
 		KeyWait % A_ThisHotkey
-		Click, left, up
-	}
-	else {
-		k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-		if (keyboard.IsModifier(k))
-			keyboard.SendModifier(k)
-		else
-			keyboard.SendPress(k)
-	}
-	Return
+		Click, right, up
+		Return
 
-; B
-J2:
-	Click, right, down
-	KeyWait % A_ThisHotkey
-	Click, right, up
-	Return
+	; X
+	J3:
+		SendInput, {Enter}
+		Return
 
-; X
-J3:
-	SendInput, {Enter}
-	Return
+	; Y
+	J4:
+		keyboard.Toggle()
+		Return
 
-; Y
-J4:
-	keyboard.Toggle()
-	Return
+	; LB
+	J5:
+		if (not keyboard.Enabled) {
+			SendInput {Alt down}{Tab}
+			KeyWait, % A_ThisHotkey
+			SendInput {Alt up}
+		}
+		else {
+			keyboard.SendPress("BS")
+		}
+		Return
 
-; LB
-J5:
-	if (not keyboard.Enabled) {
-		SendInput {Alt down}{Tab}
-		KeyWait, % A_ThisHotkey
-		SendInput {Alt up}
-	}
-	else {
-		keyboard.SendPress("BS")
-	}
-	Return
+	; RB
+	J6:
+		if (keyboard.Enabled)
+			keyboard.SendPress("Space")
 
-; RB
-J6:
-	if (keyboard.Enabled)
-		keyboard.SendPress("Space")
-
-; Back
-J7:
-	KeyWait % A_ThisHotkey
-    If (A_TimeSinceThisHotkey > 600) {
-        If not Session.Active {
-			Session.active := not Session.Active
-            ComObjCreate("SAPI.SpVoice").Speak("Activated")
-			SetTimer, DPad, % Session.DPadDelay
-			MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
-			MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
-			ActivateJoyMouse()
-        }
-        Else {
-			Session.active := not Session.Active
-            ComObjCreate("SAPI.SpVoice").Speak("Disabled")
-			DeactivateJoyMouse()
-			SetTimer, DPad, off
-			MouseController.SetTimer("cursor_timer", "off")
-			MouseController.SetTimer("scroll_wheel_timer", "off")
-        }
-    }
-    Return
-
+	; Back
+	J7:
+		KeyWait % A_ThisHotkey
+		If (A_TimeSinceThisHotkey > 600) {
+			If not Session.Active {
+				Session.active := not Session.Active
+				ComObjCreate("SAPI.SpVoice").Speak("Activated")
+				SetTimer, DPad, % Session.DPadDelay
+				MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
+				MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+				ToggleHotKeys("On")	
+			}
+			Else {
+				Session.active := not Session.Active
+				ComObjCreate("SAPI.SpVoice").Speak("Disabled")
+				ToggleHotKeys("Off")
+				SetTimer, DPad, off
+				MouseController.SetTimer("cursor_timer", "off")
+				MouseController.SetTimer("scroll_wheel_timer", "off")
+			}
+		}
+		Return
+}
 DPad() {
 	GetKeyState, JoyPOV, % Session.JoyStickNumber "JoyPov"
 	GetKeyState, JoyZ, % Session.JoyStickNumber "JoyZ"
