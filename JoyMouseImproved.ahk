@@ -297,8 +297,7 @@ Class OSK
         ; row 6
 		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],[" ",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["←",60,10],["↓",60],["→",60] ])
 
-		; TODO change so buttons are made pretty but stored ugly
-		this.PrettyName := { " ":"Space", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
+		this.UglyName := { " ":"Space", App:"AppsKey", PrScn:"PrintScreen", ScrLk:"ScrollLock", "↑":"Up", "↓":"Down", "←":"Left", "→":"Right"}
 
 		this.Make()
 	}
@@ -485,7 +484,7 @@ Class OSK
 		OldColor := this.Controls[SentRow][SentColumn].Colour
 		this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.SentButtonColour)
 		SendKey := InStr(Key, " ") ? SubStr(Key, 0) : Key
-		SendKey := (this.PrettyName[SendKey]) ? this.PrettyName[SendKey] : SendKey
+		SendKey := (this.UglyName[SendKey]) ? this.UglyName[SendKey] : SendKey
 		SendInput, % "{Blind}{" SendKey "}" 
 		For _, Modifier in this.Modifiers {
 			ModifierOn := GetKeyState(Modifier)
