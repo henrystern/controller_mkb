@@ -592,7 +592,7 @@ Class OSK
 				this.ColumnIndex += 3
 			}
 			else if (this.ColumnIndex = 13 and Direction = "Down")
-				this.ColumnIndex += 1
+				this.ColumnIndex -= 3
 			else if (this.ColumnIndex = 12 and Direction = "Up")
 				this.ColumnIndex += 1
 			else if (this.ColumnIndex > 8 and Direction = "Down")
