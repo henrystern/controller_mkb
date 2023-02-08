@@ -49,22 +49,28 @@ ToggleHotKeys(State) {
 	Hotkey, % Session.JoystickNumber . "Joy4", J4, % State
 	Hotkey, % Session.JoystickNumber . "Joy5", J5, % State
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
+	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
+	; J7 used for toggling
+	Hotkey, % Session.JoystickNumber . "Joy7", J7, % State
+	Hotkey, % Session.JoystickNumber . "Joy8", J8, % State
+	Hotkey, % Session.JoystickNumber . "Joy9", J9, % State
+	Hotkey, % Session.JoystickNumber . "Joy10", J10, % State
 }
 
 Labels() { ; so the returns don't interrupt the main thread
 	; A
 	J1:
-		if (not keyboard.Enabled or not keyboard.RowIndex) {
-			Click, left, down
-			KeyWait % A_ThisHotkey
-			Click, left, up
-		}
-		else {
+		if (keyboard.Enabled and keyboard.RowIndex) {
 			k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
 			if (keyboard.IsModifier(k))
 				keyboard.SendModifier(k)
 			else
 				keyboard.SendPress(k)
+		}
+		else {
+			Click, left, down
+			KeyWait % A_ThisHotkey
+			Click, left, up
 		}
 		Return
 
@@ -87,13 +93,13 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	; LB
 	J5:
-		if (not keyboard.Enabled) {
+		if (keyboard.Enabled) {
+			keyboard.SendPress("BS")
+		}
+		else {
 			SendInput {Alt down}{Tab}
 			KeyWait, % A_ThisHotkey
 			SendInput {Alt up}
-		}
-		else {
-			keyboard.SendPress("BS")
 		}
 		Return
 
@@ -124,6 +130,19 @@ Labels() { ; so the returns don't interrupt the main thread
 			}
 		}
 		Return
+
+	; Start
+	J8:
+		Return
+
+	; LS Down
+	J9:
+		Return
+	
+	; RS Down
+	J10:
+		Return
+
 }
 DPad() {
 	GetKeyState, JoyPOV, % Session.JoyStickNumber "JoyPov"
@@ -306,7 +325,16 @@ Class OSK
     }
 
 	IsModifier(Key) {
-		if (Key = "LShift" or Key = "LCtrl" or Key = "LAlt" or Key = "LWin" or Key = "RShift" or Key = "RCtrl" or Key = "RAlt" or Key = "RWin" or Key = "CapsLock" or Key = "ScrollLock")
+		if (Key = "LShift" 
+			or Key = "LCtrl" 
+			or Key = "LAlt" 
+			or Key = "LWin" 
+			or Key = "RShift" 
+			or Key = "RCtrl" 
+			or Key = "RAlt" 
+			or Key = "RWin"
+			or Key = "CapsLock"
+			or Key = "ScrollLock")
 			return True
 		else
 			return False
@@ -319,13 +347,10 @@ Class OSK
 		Gui, OSK: Color, % this.Background
 		SS_CenterTextInBox := 0x200 ; styling adjustment
 		For Index, Row in this.Layout {
-            if Index <= 2
-                RelativePosition := ""
-
 			For i, Button in Row {
                 Width := Button.2 ? Button.2 : 45 
                 HorizontalOffset := Button.3 ? Button.3 : 2
-                RelativePosition := = "" ? "xm" : i=1 ? "xm y+2" : "x+" HorizontalOffset
+                RelativePosition := Index <= 2 and i = 1 ? "xm" : i=1 ? "xm y+2" : "x+" HorizontalOffset
 				ButtonText := this.PrettyName[Button.1] ? this.PrettyName[Button.1] : Button.1
 
 				; Control handling is from Hellbent's script: https://www.autohotkey.com/boards/viewtopic.php?t=87535
@@ -411,21 +436,16 @@ Class OSK
 	SendModifier(Key) {
 		ModifierRow := this.Keys[Key][1]
 		ModifierColumn := this.Keys[Key][2]
-		if (Key = "CapsLock" or Key = "ScrollLock") {
-			ModifierOn := GetKeyState(Key, "T")
-			if ModifierOn
-				Set%Key%State, Off
-			else
-				Set%Key%State, On
-		}
+		if (Key = "CapsLock")
+			SetCapsLockState, % not GetKeyState(Key, "T")
+		else if (Key = "ScrollLock")
+			SetScrollLockState, % not GetKeyState(Key, "T")
 		else {
 			ModifierOn := GetKeyState(Key)
-			if (ModifierOn) {
+			if (ModifierOn)
 				SendInput, % "{" Key " up}"
-			}
-			else {
+			else 
 				SendInput, % "{" Key " down}"
-			}
 		}
 		return
 	}
