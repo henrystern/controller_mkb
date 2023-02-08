@@ -16,13 +16,12 @@ class State
 		this.JoyThresholdLower := 50 - 20
 		this.JoyThresholdUpper := 50 + 20
 
-		this.MouseTopSpeed := 5
-		this.JoyZBoost := 5 ; Affects how much holding JoyZ increases mouse speed
-
-		this.ScrollSpeed := 2
+		this.MouseTopSpeed := 10
+		this.ScrollSpeed := 30 
+		this.JoyZBoost := 2 ; Affects how much holding JoyZ increases mouse and scrollspeed
 
 		this.MouseMoveDelay := 10
-		this.ScrollWheelDelay := 5
+		this.ScrollWheelDelay := 10
 		this.DPadDelay := 30
 
 		this.Active := True
@@ -30,8 +29,11 @@ class State
 }
 
 Global Session := new State
-Global keyboard
-initKeyboard(keyboard)
+Global keyboard := new OSK("dark", "qwerty")
+HandleOSKClick() {
+	keyboard.HandleOSKClick()
+	return
+}
 Global MouseController := new MouseControls()
 
 Hotkey, % Session.JoystickNumber . "Joy7" " & " Session.JoystickNumber . "Joy8", ToggleJoyMouse, On
@@ -42,7 +44,7 @@ if Session.Active {
 
 ToggleHotKeys(State) {
 	; associates actions with joy buttons
-	if (State == "On") {
+	if (State = "On") {
 		SetTimer, DPad, % Session.DPadDelay
 		MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
 		MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
@@ -155,7 +157,7 @@ Labels() { ; so the returns don't interrupt the main thread
 		}
 
 		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-		JoyZ := min(NormalizeJoyRange(JoyZ), 0)
+		JoyZ := max(0, NormalizeJoyRange(JoyZ))
 
 		left := JoyPOV = 27000
 		up := JoyPOV = 0
@@ -206,11 +208,11 @@ NormalizeJoyRange(Joy) {
 	}
 
 	if (Joy < Session.JoyThresholdLower) {
-		return (Joy - Session.JoyThresholdLower) // JoyThresholdLower
+		return (Joy - Session.JoyThresholdLower) / Session.JoyThresholdLower
 	}
 
 	if (Joy > Session.JoyThresholdUpper) {
-		return (Joy - Session.JoyThresholdUpper) // JoyThresholdLower
+		return (Joy - Session.JoyThresholdUpper) / Session.JoyThresholdLower
 	}
 
 	; if joy doesnt exceed threshold
@@ -239,18 +241,21 @@ Class MouseControls
 		; one click equivalent to dwData 120
 
 		JoyR := GetKeyState(Session.JoyStickNumber . "JoyR")
-		JoyR := NormalizeJoyRange(JoyR)
+		JoyR := - NormalizeJoyRange(JoyR)
 
 		JoyU := GetKeyState(Session.JoyStickNumber . "JoyU")
 		JoyU := NormalizeJoyRange(JoyU)
 
+		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
+		JoyZ := abs(min(NormalizeJoyRange(JoyZ), 0))
+
 		; WheelUp/Down
 		if JoyR
-			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, Session.ScrollSpeed * JoyR, int, 0)
+			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, (1 + Session.JoyZBoost * JoyZ) * Session.ScrollSpeed * JoyR, int, 0)
 
 		; WheelLeft/Right
 		if JoyU
-			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, Session.ScrollSpeed * JoyU, Session.JoyThresholdUpper, int, 0)
+			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, (1 + Session.JoyZBoost * JoyZ) * Session.ScrollSpeed * JoyU, int, 0)
 
 		return
     }
@@ -263,21 +268,13 @@ Class MouseControls
 		JoyY := NormalizeJoyRange(JoyY)
 
 		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-		JoyZ := max(0, NormalizeJoyRange(JoyZ))
+		JoyZ := abs(min(NormalizeJoyRange(JoyZ), 0))
 
 		if JoyX or JoyY
 			MouseMove, (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyX,  (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyY, 0, R
 
 		Return
     }
-}
-
-initKeyboard(byref Name, theme:="dark", layout:="qwerty") {
-	Name := new OSK(theme, layout)
-	Return
-	HandleOSKClick:
-		Name.HandleOSKClick()
-		return
 }
 
 Class OSK
@@ -348,22 +345,6 @@ Class OSK
 		return
     }
 
-	IsModifier(Key) {
-		if (Key = "LShift" 
-			or Key = "LCtrl" 
-			or Key = "LAlt" 
-			or Key = "LWin" 
-			or Key = "RShift" 
-			or Key = "RCtrl" 
-			or Key = "RAlt" 
-			or Key = "RWin"
-			or Key = "CapsLock"
-			or Key = "ScrollLock")
-			return True
-		else
-			return False
-	}
-
 	Make() {
 		Gui, OSK: +AlwaysOnTop -DPIScale +Owner -Caption +E0x08000000 
 		Gui, OSK: Font, s12, Verdana
@@ -385,21 +366,8 @@ Class OSK
 				this.Keys[Button.1] := [Index, i]
                 this.Controls[Index, i] := {Progress: p, Text: topt, Label: HandlePress, Colour: this.ButtonColour}
 			}
-		}
+		}	
 		Return
-	}
-
-	HandleOSKClick(Key:="") {
-		if not Key {
-			Key := A_GuiControl
-		}
-		if (this.IsModifier(Key)) {
-			this.SendModifier(Key)
-		}
-		else {
-			this.SendPress(Key)
-		}
-		return
 	}
 
 	Show() {
@@ -425,6 +393,23 @@ Class OSK
 
 		this.SetTimer("MonitorKeyPresses", 30)
 
+		Return
+	}
+
+	Hide() {
+		this.Enabled := False
+		Gui, OSK: Hide
+		this.SetTimer("MonitorKeyPresses", "off")
+		return
+	}
+
+	Toggle() {
+		If this.Enabled {
+			this.Hide()
+		}
+		Else {
+			this.Show()
+		}
 		Return
 	}
 
@@ -459,6 +444,35 @@ Class OSK
 		w := NumGet(rc, 8, "int")
 		h := NumGet(rc, 12, "int")
 		Return
+	}
+
+	HandleOSKClick(Key:="") {
+		if not Key {
+			Key := A_GuiControl
+		}
+		if (this.IsModifier(Key)) {
+			this.SendModifier(Key)
+		}
+		else {
+			this.SendPress(Key)
+		}
+		return
+	}
+
+	IsModifier(Key) {
+		if (Key = "LShift" 
+			or Key = "LCtrl" 
+			or Key = "LAlt" 
+			or Key = "LWin" 
+			or Key = "RShift" 
+			or Key = "RCtrl" 
+			or Key = "RAlt" 
+			or Key = "RWin"
+			or Key = "CapsLock"
+			or Key = "ScrollLock")
+			return True
+		else
+			return False
 	}
 
 	MonitorModifiers() {
@@ -533,22 +547,6 @@ Class OSK
 		return
 	}
 
-	Hide() {
-		this.Enabled := False
-		Gui, OSK: Hide
-		this.SetTimer("MonitorKeyPresses", "off")
-		return
-	}
-
-	Toggle() {
-		If this.Enabled {
-			this.Hide()
-		}
-		Else {
-			this.Show()
-		}
-		Return
-	}
 
     ChangeIndex(Direction) {
 		if (not this.RowIndex) {
