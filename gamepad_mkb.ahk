@@ -84,11 +84,8 @@ Labels() { ; so the returns don't interrupt the main thread
 	; A
 	J1:
 		if (keyboard.Enabled and keyboard.RowIndex) {
-			k := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-			if (keyboard.IsModifier(k))
-				keyboard.SendModifier(k)
-			else
-				keyboard.SendPress(k)
+			Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+			keyboard.HandleOSKClick(Key)
 		}
 		else {
 			Click, left, down
@@ -248,9 +245,12 @@ Class MouseControls
 		JoyU := NormalizeJoyRange(JoyU)
 
 		; WheelUp/Down
-		DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, Session.ScrollSpeed * JoyR, int, 0)
+		if JoyR
+			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, Session.ScrollSpeed * JoyR, int, 0)
+
 		; WheelLeft/Right
-		DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, Session.ScrollSpeed * JoyU, Session.JoyThresholdUpper, int, 0)
+		if JoyU
+			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, Session.ScrollSpeed * JoyU, Session.JoyThresholdUpper, int, 0)
 
 		return
     }
@@ -265,7 +265,8 @@ Class MouseControls
 		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
 		JoyZ := max(0, NormalizeJoyRange(JoyZ))
 
-		MouseMove, (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyX,  (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyY, 0, R
+		if JoyX or JoyY
+			MouseMove, (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyX,  (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyY, 0, R
 
 		Return
     }
@@ -372,12 +373,15 @@ Class OSK
 		Return
 	}
 
-	HandleOSKClick() {
-		if (this.IsModifier(A_GuiControl)) {
-			this.SendModifier(A_GuiControl)
+	HandleOSKClick(Key:="") {
+		if not Key {
+			Key := A_GuiControl
+		}
+		if (this.IsModifier(Key)) {
+			this.SendModifier(Key)
 		}
 		else {
-			this.SendPress(A_GuiControl)
+			this.SendPress(Key)
 		}
 		return
 	}
@@ -441,40 +445,9 @@ Class OSK
 		Return
 	}
 
-	SendModifier(Key) {
-		ModifierRow := this.Keys[Key][1]
-		ModifierColumn := this.Keys[Key][2]
-		if (Key = "CapsLock")
-			SetCapsLockState, % not GetKeyState(Key, "T")
-		else if (Key = "ScrollLock")
-			SetScrollLockState, % not GetKeyState(Key, "T")
-		else {
-			ModifierOn := GetKeyState(Key)
-			if (ModifierOn)
-				SendInput, % "{" Key " up}"
-			else 
-				SendInput, % "{" Key " down}"
-		}
-		return
-	}
-
 	MonitorModifiers() {
 		For _, Modifier in this.Modifiers {
-			if (Modifier = "CapsLock" or Key = "ScrollLock")
-				ModifierOn := GetKeyState(Key, "T")
-			else
-				ModifierOn := GetKeyState(Modifier)
-			ModifierRow := this.Keys[Modifier][1]
-			ModifierColumn := this.Keys[Modifier][2]
-			if (ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour != this.ToggledButtonColour) {
-				this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ToggledButtonColour)
-			}
-			else if (not ModifierOn and this.Controls[ModifierRow, ModifierColumn].Colour = this.ToggledButtonColour) {
-				if (ModifierRow = this.RowIndex and ModifierColumn = this.ColumnIndex)
-					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ActiveButtonColour)
-				else
-					this.UpdateGraphics(this.Controls[ModifierRow, ModifierColumn], this.ButtonColour)
-			}
+			MonitorKey(Modifier)
 		}
 		Return
 	}
@@ -482,24 +455,28 @@ Class OSK
 
 	MonitorAllKeys() {
 		For _, Row in this.Layout {
-			For i, Key in Row {
-				Key := Key.1
-				if (Key = "CapsLock" or Key = "ScrollLock")
-					KeyOn := GetKeyState(Key, "T")
-				else
-					KeyOn := GetKeyState(Key)
-				KeyRow := this.Keys[Key][1]
-				KeyColumn := this.Keys[Key][2]
-				if (KeyOn and this.Controls[KeyRow, KeyColumn].Colour != this.ToggledButtonColour) {
-					this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ToggledButtonColour)
-				}
-				else if (not KeyOn and this.Controls[KeyRow, KeyColumn].Colour = this.ToggledButtonColour) {
-					if (KeyRow = this.RowIndex and KeyColumn = this.ColumnIndex)
-						this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ActiveButtonColour)
-					else
-						this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ButtonColour)
-				}
+			For i, Button in Row {
+				MonitorKey(Button.1)
 			}
+		}
+		Return
+	}
+
+	MonitorKey(Key) {
+		if (Key = "CapsLock" or Key = "ScrollLock")
+			KeyOn := GetKeyState(Key, "T")
+		else
+			KeyOn := GetKeyState(Key)
+		KeyRow := this.Keys[Key][1]
+		KeyColumn := this.Keys[Key][2]
+		if (KeyOn and this.Controls[KeyRow, KeyColumn].Colour != this.ToggledButtonColour) {
+			this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ToggledButtonColour)
+		}
+		else if (not KeyOn and this.Controls[KeyRow, KeyColumn].Colour = this.ToggledButtonColour) {
+			if (KeyRow = this.RowIndex and KeyColumn = this.ColumnIndex)
+				this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ActiveButtonColour)
+			else
+				this.UpdateGraphics(this.Controls[KeyRow, KeyColumn], this.ButtonColour)
 		}
 		Return
 	}
@@ -521,6 +498,23 @@ Class OSK
 		else
 			this.UpdateGraphics(this.Controls[SentRow, SentColumn], this.ButtonColour)
 		Return
+	}
+
+	SendModifier(Key) {
+		ModifierRow := this.Keys[Key][1]
+		ModifierColumn := this.Keys[Key][2]
+		if (Key = "CapsLock")
+			SetCapsLockState, % not GetKeyState(Key, "T")
+		else if (Key = "ScrollLock")
+			SetScrollLockState, % not GetKeyState(Key, "T")
+		else {
+			ModifierOn := GetKeyState(Key)
+			if (ModifierOn)
+				SendInput, % "{" Key " up}"
+			else 
+				SendInput, % "{" Key " down}"
+		}
+		return
 	}
 
 	Hide() {
