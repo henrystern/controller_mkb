@@ -272,8 +272,8 @@ Class MouseControls
     }
 }
 
-initKeyboard(byref Name) {
-	Name := new OSK(Name)
+initKeyboard(byref Name, theme:="dark", layout:="qwerty") {
+	Name := new OSK(theme, layout)
 	Return
 	HandleOSKClick:
 		Name.HandleOSKClick()
@@ -284,46 +284,54 @@ Class OSK
 ; Adapted from feiyue's script: https://www.autohotkey.com/boards/viewtopic.php?t=58366 
 {
 
-	__New() {
+	__New(theme:="dark", layout:="qwerty") {
 		this.Enabled := False
 
 		this.Keys := []
 		this.Controls := []
 		this.Modifiers := ["LShift", "LCtrl", "LWin", "LAlt", "RShift", "RCtrl", "RWin", "RAlt", "CapsLock", "ScrollLock"]
 
-		this.Background := "010409"
-		this.ButtonColour := "0d1117" 
-		this.ButtonOutlineColour := "0d1117" 
-		this.ActiveButtonColour := "1b1a20" 
-		this.SentButtonColour := "7c2a2b"
-		this.ToggledButtonColour := "7c2a2a" ; don't set exactly the same as SentButtonColour
-		this.TextColour := "8b949e"
+		if (theme = "light") {
+			this.Background := "FDF6E3"
+			this.ButtonColour := "EEE8D5" 
+			this.ButtonOutlineColour := "8E846F" 
+			this.ActiveButtonColour := "DDD6C1" 
+			this.SentButtonColour := "AC9D57"
+			this.ToggledButtonColour := "AC9D58" ; don't set exactly the same as SentButtonColour
+			this.TextColour := "657B83"
+		}
+		else if (theme = "dark") {
+			this.Background := "2A2A2E"
+			this.ButtonColour := "010409" 
+			this.ButtonOutlineColour := "010409" 
+			this.ActiveButtonColour := "1b1a20" 
+			this.SentButtonColour := "553b6b"
+			this.ToggledButtonColour := "553b6a" ; don't set exactly the same as SentButtonColour
+			this.TextColour := "8b949e"
+		}
 
         this.MonitorKeyPresses := ObjBindMethod(this, "MonitorAllKeys") ; can choose between MonitorModifiers and MonitorAllKeys
 
 		this.Layout := []
-        ; row 1- format is ["Text", width:=45, x-offset:=2]
-        this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
-        ; row 2
-		this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
-        ; row 3
-		this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
-        ; row 4
-		this.Layout.Push([ ["CapsLock",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
-        ; row 5
-		this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
-        ; row 6
-		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
+        ; layout format is ["Text", width:=45, x-offset:=2]
+		if (layout = "qwerty") {
+			this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
+			this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
+			this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
+			this.Layout.Push([ ["CapsLock",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
+			this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
+			this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
+		}
+		else if (layout = "colemak-dh") {
+			this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
+			this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
+			this.Layout.Push([ ["Tab"],["q"],["w"],["f"],["p"],["b"],["j"],["l"],["u"],["y"],[";"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
+			this.Layout.Push([ ["CapsLock",60],["a"],["r"],["s"],["t"],["g"],["m"],["n"],["e"],["i"],["`;"],["'"],["Enter",77] ])
+			this.Layout.Push([ ["LShift",90],["x"],["c"],["d"],["v"],["z"],["k"],["h"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
+			this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
+		}
 
-		; Colemak-DH
-        ; this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
-		; this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
-		; this.Layout.Push([ ["Tab"],["q"],["w"],["f"],["p"],["b"],["j"],["l"],["u"],["y"],[";"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
-		; this.Layout.Push([ ["CapsLock",60],["a"],["r"],["s"],["t"],["g"],["m"],["n"],["e"],["i"],["`;"],["'"],["Enter",77] ])
-		; this.Layout.Push([ ["LShift",90],["x"],["c"],["d"],["v"],["z"],["k"],["h"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
-		; this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
-
-		; Optionally sets alternate text for the button actions named in this.Layout
+		; Optionally sets alternate text for the button actions named in this.Layout - doesn't have to be in same order as layout
 		this.PrettyName := { "PrintScreen": "Prt Scr", "ScrollLock": "Scr Lk"
 								, 1: "1 !", 2: "2 @", 3: "3 #", 4: "4 $", 5: "5 %", 6: "6 ^", 7: "7 &&", 8: "8 *", 9: "9 (", 0: "0 )", "-": "- _", "=": "= +", "BS": "←", "PgUp": "Pg Up", "PgDn": "Pg Dn"
 								, "[": "[ {", "]": "] }", "\": "\ |"
