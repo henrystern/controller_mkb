@@ -13,12 +13,12 @@ class State
 {
 	__new() {
 		this.JoystickNumber := 2
-		this.JoyThresholdLower := 50 - 20
-		this.JoyThresholdUpper := 50 + 20
+		this.JoyThresholdLower := 50 - 10
+		this.JoyThresholdUpper := 50 + 10
 
-		this.MouseTopSpeed := 10
+		this.MouseTopSpeed := 5
 		this.ScrollSpeed := 30 
-		this.JoyZBoost := 2 ; Affects how much holding JoyZ increases mouse and scrollspeed
+		this.JoyZBoost := 3 ; Affects how much holding JoyZ increases mouse and scrollspeed
 
 		this.MouseMoveDelay := 10
 		this.ScrollWheelDelay := 10
@@ -148,6 +148,9 @@ Labels() { ; so the returns don't interrupt the main thread
 	
 	; RS Down
 	J10:
+		If (keyboard.enabled) {
+			keyboard.SendModifier("LCtrl")
+		}
 		Return
 
 	DPad:
@@ -297,7 +300,7 @@ Class OSK
 			this.ToggledButtonColour := "AC9D58" ; don't set exactly the same as SentButtonColour
 			this.TextColour := "657B83"
 		}
-		else if (theme = "dark") {
+		else { ; default dark theme
 			this.Background := "2A2A2E"
 			this.ButtonColour := "010409" 
 			this.ButtonOutlineColour := "010409" 
@@ -311,20 +314,20 @@ Class OSK
 
 		this.Layout := []
         ; layout format is ["Text", width:=45, x-offset:=2]
-		if (layout = "qwerty") {
-			this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
-			this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
-			this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
-			this.Layout.Push([ ["CapsLock",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
-			this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
-			this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
-		}
-		else if (layout = "colemak-dh") {
+		if (layout = "colemak-dh") {
 			this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
 			this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
 			this.Layout.Push([ ["Tab"],["q"],["w"],["f"],["p"],["b"],["j"],["l"],["u"],["y"],[";"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
 			this.Layout.Push([ ["CapsLock",60],["a"],["r"],["s"],["t"],["g"],["m"],["n"],["e"],["i"],["`;"],["'"],["Enter",77] ])
 			this.Layout.Push([ ["LShift",90],["x"],["c"],["d"],["v"],["z"],["k"],["h"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
+			this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
+		}
+		else { ; default qwerty
+			this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
+			this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
+			this.Layout.Push([ ["Tab"],["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
+			this.Layout.Push([ ["CapsLock",60],["a"],["s"],["d"],["f"],["g"],["h"],["j"],["k"],["l"],["`;"],["'"],["Enter",77] ])
+			this.Layout.Push([ ["LShift",90],["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
 			this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
 		}
 
