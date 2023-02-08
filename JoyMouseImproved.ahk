@@ -20,7 +20,7 @@ class State
 		this.JoyZBoost := 5 ; Affects how much holding JoyZ increases mouse speed
 
 		this.MouseMoveDelay := 10
-		this.ScrollWheelDelay := 30
+		this.ScrollWheelDelay := 5
 		this.DPadDelay := 30
 
 		this.Active := True
@@ -51,7 +51,6 @@ ToggleHotKeys(State) {
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
 	; J7 used for toggling
-	Hotkey, % Session.JoystickNumber . "Joy7", J7, % State
 	Hotkey, % Session.JoystickNumber . "Joy8", J8, % State
 	Hotkey, % Session.JoystickNumber . "Joy9", J9, % State
 	Hotkey, % Session.JoystickNumber . "Joy10", J10, % State
@@ -107,6 +106,7 @@ Labels() { ; so the returns don't interrupt the main thread
 	J6:
 		if (keyboard.Enabled)
 			keyboard.SendPress("Space")
+		Return
 
 	; Back
 	J7:
@@ -137,6 +137,9 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	; LS Down
 	J9:
+		If (keyboard.enabled) {
+			keyboard.SendModifier("CapsLock")
+		}
 		Return
 	
 	; RS Down
@@ -207,22 +210,32 @@ Class MouseControls
     }
 
     MoveScrollWheel() {
+		; using mouse_event instead of SendInput to allow smooth scrolling
+		; https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-mouse_event
+		; one click equivalent to dwData 120
+
 		GetKeyState, JoyR, % Session.JoyStickNumber "JoyR"
 		if (JoyR > Session.JoyThresholdUpper) {
-			SendInput {WheelDown}
+			; WheelDown
+			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
+			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, -2 * mod(JoyR, Session.JoyThresholdUpper), int, 0)
 		}
-
-		if (JoyR >= 0 and JoyR < Session.JoyThresholdLower) { ; first condition controls for the controller being off
-			SendInput {WheelUp}
+		else if (JoyR >= 0 and JoyR < Session.JoyThresholdLower) { ; first condition controls for the controller being off
+			; WheelUp
+			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
+			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, 60 - 2 * mod(JoyR, Session.JoyThresholdUpper), int, 0)
 		}
 
 		GetKeyState, JoyU, % Session.JoyStickNumber "JoyU"
-		if (JoyU > Session.JoyThresholdUpper) {
-			SendInput {WheelRight}
+		if (JoyU > Session.JoyThresholdUpper) { ; first condition controls for the controller being off
+			; WheelRight
+			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
+			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, 2 * mod(JoyU, Session.JoyThresholdUpper), int, 0)
 		}
-
-		if (JoyU < Session.JoyThresholdLower) {
-			SendInput {WheelLeft}
+		else if (JoyU >= 0 and JoyU < Session.JoyThresholdLower) {
+			; WheelLeft
+			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
+			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, -60 + 2 * mod(JoyU, Session.JoyThresholdUpper), int, 0)
 		}
 
 		return
@@ -267,6 +280,7 @@ Class MouseControls
 
 initKeyboard(byref Name) {
 	Name := new OSK(Name)
+	Return
 	HandleOSKClick:
 		Name.HandleOSKClick()
 		return
@@ -413,17 +427,17 @@ Class OSK
 				Return A_Index
 				}
 			}
-			Return 1
+		Return 1
 	}
 
 	CoordXCenterScreen(WidthOfGUI,ScreenNumber) {
 		SysGet, Mon1, Monitor, %ScreenNumber%
-			return ((Mon1Right-Mon1Left - WidthOfGUI) / 2) + Mon1Left
+		return ((Mon1Right-Mon1Left - WidthOfGUI) / 2) + Mon1Left
 	}
 
 	CoordYCenterScreen(HeightofGUI,ScreenNumber) {
 		SysGet, Mon1, Monitor, %ScreenNumber%
-			return (Mon1Bottom - 80 - HeightofGUI)
+		return (Mon1Bottom - 80 - HeightofGUI)
 	}
 
 	GetClientSize(hwnd, ByRef w, ByRef h) {
@@ -431,6 +445,7 @@ Class OSK
 		DllCall("GetClientRect", "uint", hwnd, "uint", &rc)
 		w := NumGet(rc, 8, "int")
 		h := NumGet(rc, 12, "int")
+		Return
 	}
 
 	SendModifier(Key) {
@@ -566,6 +581,7 @@ Class OSK
 
 		if (this.Controls[this.RowIndex, this.ColumnIndex].Colour != this.ToggledButtonColour)
 			this.UpdateGraphics(this.Controls[this.RowIndex, this.ColumnIndex], this.ActiveButtonColour)
+		Return
     }
 
 	HandleChangeIndex(Direction) {
