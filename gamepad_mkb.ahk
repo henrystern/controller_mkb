@@ -315,6 +315,14 @@ Class OSK
         ; row 6
 		this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
 
+		; Colemak-DH
+        ; this.Layout.Push([ ["Esc"],["F1",,23],["F2"],["F3"],["F4"],["F5",,15],["F6"],["F7"],["F8"],["F9",,15],["F10"],["F11"],["F12"],["PrintScreen",60,10],["ScrollLock",60],["Pause",60] ])
+		; this.Layout.Push([ ["~", 30],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="],["BS", 60],["Ins",60,10],["Home",60],["PgUp",60] ])
+		; this.Layout.Push([ ["Tab"],["q"],["w"],["f"],["p"],["b"],["j"],["l"],["u"],["y"],[";"],["["],["]"],["\"],["Del",60,10],["End",60],["PgDn",60] ])
+		; this.Layout.Push([ ["CapsLock",60],["a"],["r"],["s"],["t"],["g"],["m"],["n"],["e"],["i"],["`;"],["'"],["Enter",77] ])
+		; this.Layout.Push([ ["LShift",90],["x"],["c"],["d"],["v"],["z"],["k"],["h"],[","],["."],["/"],["RShift",94],["↑",60,72] ])
+		; this.Layout.Push([ ["LCtrl",60],["LWin",60],["LAlt",60],["Space",222],["RAlt",60],["RWin",60],["App",60],["RCtrl",60],["Left",60,10],["Down",60],["Right",60] ])
+
 		; Optionally sets alternate text for the button actions named in this.Layout
 		this.PrettyName := { "PrintScreen": "Prt Scr", "ScrollLock": "Scr Lk"
 								, 1: "1 !", 2: "2 @", 3: "3 #", 4: "4 $", 5: "5 %", 6: "6 ^", 7: "7 &&", 8: "8 *", 9: "9 (", 0: "0 )", "-": "- _", "=": "= +", "BS": "←", "PgUp": "Pg Up", "PgDn": "Pg Dn"
@@ -447,7 +455,7 @@ Class OSK
 
 	MonitorModifiers() {
 		For _, Modifier in this.Modifiers {
-			MonitorKey(Modifier)
+			this.MonitorKey(Modifier)
 		}
 		Return
 	}
@@ -456,7 +464,7 @@ Class OSK
 	MonitorAllKeys() {
 		For _, Row in this.Layout {
 			For i, Button in Row {
-				MonitorKey(Button.1)
+				this.MonitorKey(Button.1)
 			}
 		}
 		Return
