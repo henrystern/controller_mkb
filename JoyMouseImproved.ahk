@@ -19,6 +19,8 @@ class State
 		this.MouseTopSpeed := 5
 		this.JoyZBoost := 5 ; Affects how much holding JoyZ increases mouse speed
 
+		this.ScrollSpeed := 2
+
 		this.MouseMoveDelay := 10
 		this.ScrollWheelDelay := 5
 		this.DPadDelay := 30
@@ -32,17 +34,24 @@ Global keyboard
 initKeyboard(keyboard)
 Global MouseController := new MouseControls()
 
-; Hold Back to toggle JoyMouse
-Hotkey, % Session.JoystickNumber . "Joy7", J7, On
+Hotkey, % Session.JoystickNumber . "Joy7" " & " Session.JoystickNumber . "Joy8", ToggleJoyMouse, On
 
 if Session.Active {
 	ToggleHotKeys("On")
-	SetTimer, DPad, % Session.DPadDelay
-	MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
-	MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
 }
 
 ToggleHotKeys(State) {
+	; associates actions with joy buttons
+	if (State == "On") {
+		SetTimer, DPad, % Session.DPadDelay
+		MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
+		MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+	}
+	else {
+		SetTimer, DPad, off
+		MouseController.SetTimer("cursor_timer", "off")
+		MouseController.SetTimer("scroll_wheel_timer", "off")
+	}
 	Hotkey, % Session.JoystickNumber . "Joy1", J1, % State
 	Hotkey, % Session.JoystickNumber . "Joy2", J2, % State
 	Hotkey, % Session.JoystickNumber . "Joy3", J3, % State
@@ -50,13 +59,28 @@ ToggleHotKeys(State) {
 	Hotkey, % Session.JoystickNumber . "Joy5", J5, % State
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
-	; J7 used for toggling
+	Hotkey, % Session.JoystickNumber . "Joy7", J7, % State
 	Hotkey, % Session.JoystickNumber . "Joy8", J8, % State
 	Hotkey, % Session.JoystickNumber . "Joy9", J9, % State
 	Hotkey, % Session.JoystickNumber . "Joy10", J10, % State
 }
 
 Labels() { ; so the returns don't interrupt the main thread
+	; specifies what actions each joy button will perform
+
+	ToggleJoyMouse:
+		If not Session.Active {
+			Session.active := not Session.Active
+			ToggleHotKeys("On")	
+			ComObjCreate("SAPI.SpVoice").Speak("On")
+		}
+		Else {
+			Session.active := not Session.Active
+			ToggleHotKeys("Off")
+			ComObjCreate("SAPI.SpVoice").Speak("Off")
+		}
+		Return
+
 	; A
 	J1:
 		if (keyboard.Enabled and keyboard.RowIndex) {
@@ -110,25 +134,6 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	; Back
 	J7:
-		KeyWait % A_ThisHotkey
-		If (A_TimeSinceThisHotkey > 600) {
-			If not Session.Active {
-				Session.active := not Session.Active
-				ComObjCreate("SAPI.SpVoice").Speak("Activated")
-				SetTimer, DPad, % Session.DPadDelay
-				MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
-				MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
-				ToggleHotKeys("On")	
-			}
-			Else {
-				Session.active := not Session.Active
-				ComObjCreate("SAPI.SpVoice").Speak("Disabled")
-				ToggleHotKeys("Off")
-				SetTimer, DPad, off
-				MouseController.SetTimer("cursor_timer", "off")
-				MouseController.SetTimer("scroll_wheel_timer", "off")
-			}
-		}
 		Return
 
 	; Start
@@ -146,51 +151,73 @@ Labels() { ; so the returns don't interrupt the main thread
 	J10:
 		Return
 
-}
-DPad() {
-	GetKeyState, JoyPOV, % Session.JoyStickNumber "JoyPov"
-	GetKeyState, JoyZ, % Session.JoyStickNumber "JoyZ"
-	if (JoyPOV = -1) {  ; No angle.
+	DPad:
+		JoyPOV := GetKeyState(Session.JoyStickNumber . "JoyPOV")
+		if (JoyPOV = -1) {  ; No angle.
+			return
+		}
+
+		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
+		JoyZ := min(NormalizeJoyRange(JoyZ), 0)
+
+		left := JoyPOV = 27000
+		up := JoyPOV = 0
+		down := JoyPOV = 18000
+		right := JoyPOV = 9000
+
+		if keyboard.Enabled {
+			if left
+				keyboard.ChangeIndex("Left")
+			else if up
+				keyboard.ChangeIndex("Up")
+			else if down
+				keyboard.ChangeIndex("Down")
+			else if right
+				keyboard.ChangeIndex("Right")
+		}
+		else if (not JoyZ) {
+			if left
+				SendInput {Left}
+			else if up
+				SendInput {Up}
+			else if down
+				SendInput {Down}
+			else if right
+				SendInput {Right}
+		} 
+		else {
+			if left
+				SendInput ^+{Tab}
+			else if up
+				SendInput ^t
+			else if down
+				SendInput ^w
+			else if right
+				SendInput ^{Tab}
+		}
+		Sleep, 200
 		return
+
+}
+
+NormalizeJoyRange(Joy) {
+	; Takes a joy value between 0 and 100 and returns a range from -1 to 1 excluding the threshold amount
+
+	; if joy not on
+	if (not Joy and Joy != 0) { 
+		return 0
 	}
 
-	left := JoyPOV = 27000
-	up := JoyPOV = 0
-	down := JoyPOV = 18000
-	right := JoyPOV = 9000
+	if (Joy < Session.JoyThresholdLower) {
+		return (Joy - Session.JoyThresholdLower) // JoyThresholdLower
+	}
 
-	if keyboard.Enabled {
-		if left
-			keyboard.ChangeIndex("Left")
-		else if up
-			keyboard.ChangeIndex("Up")
-		else if down
-			keyboard.ChangeIndex("Down")
-		else if right
-			keyboard.ChangeIndex("Right")
+	if (Joy > Session.JoyThresholdUpper) {
+		return (Joy - Session.JoyThresholdUpper) // JoyThresholdLower
 	}
-	else if (JoyZ < 60) {
-		if left
-			SendInput {Left}
-		else if up
-			SendInput {Up}
-		else if down
-			SendInput {Down}
-		else if right
-			SendInput {Right}
-	} 
-	else {
-		if left
-			SendInput ^+{Tab}
-		else if up
-			SendInput ^t
-		else if down
-			SendInput ^w
-		else if right
-			SendInput ^{Tab}
-	}
-	Sleep, 200
-	return
+
+	; if joy doesnt exceed threshold
+	return 0
 }
 
 Class MouseControls
@@ -214,65 +241,31 @@ Class MouseControls
 		; https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-mouse_event
 		; one click equivalent to dwData 120
 
-		GetKeyState, JoyR, % Session.JoyStickNumber "JoyR"
-		if (JoyR > Session.JoyThresholdUpper) {
-			; WheelDown
-			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
-			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, -2 * mod(JoyR, Session.JoyThresholdUpper), int, 0)
-		}
-		else if (JoyR >= 0 and JoyR < Session.JoyThresholdLower) { ; first condition controls for the controller being off
-			; WheelUp
-			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
-			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, 60 - 2 * mod(JoyR, Session.JoyThresholdUpper), int, 0)
-		}
+		JoyR := GetKeyState(Session.JoyStickNumber . "JoyR")
+		JoyR := NormalizeJoyRange(JoyR)
 
-		GetKeyState, JoyU, % Session.JoyStickNumber "JoyU"
-		if (JoyU > Session.JoyThresholdUpper) { ; first condition controls for the controller being off
-			; WheelRight
-			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
-			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, 2 * mod(JoyU, Session.JoyThresholdUpper), int, 0)
-		}
-		else if (JoyU >= 0 and JoyU < Session.JoyThresholdLower) {
-			; WheelLeft
-			;		                  dwFlags      dx      dy        dwData                                       dwExtraInfo   
-			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, -60 + 2 * mod(JoyU, Session.JoyThresholdUpper), int, 0)
-		}
+		JoyU := GetKeyState(Session.JoyStickNumber . "JoyU")
+		JoyU := NormalizeJoyRange(JoyU)
+
+		; WheelUp/Down
+		DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, Session.ScrollSpeed * JoyR, int, 0)
+		; WheelLeft/Right
+		DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, Session.ScrollSpeed * JoyU, Session.JoyThresholdUpper, int, 0)
 
 		return
     }
 
     MoveCursor() {
 		JoyX := GetKeyState(Session.JoyStickNumber . "JoyX")
+		JoyX := NormalizeJoyRange(JoyX)
+
 		JoyY := GetKeyState(Session.JoyStickNumber . "JoyY")
+		JoyY := NormalizeJoyRange(JoyY)
 
-		if (JoyY <= Session.JoyThresholdLower) {
-			y := (JoyY / Session.JoyThresholdLower) - 1
-		}
-		else if (JoyY >= Session.JoyThresholdUpper) {
-			y := (JoyY - Session.JoyThresholdUpper) / (100 - Session.JoyThresholdUpper)
-		}
-		else
-			y := 0
+		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
+		JoyZ := max(0, NormalizeJoyRange(JoyZ))
 
-
-		if (JoyX <= Session.JoyThresholdLower) {
-			x := (JoyX / Session.JoyThresholdLower) - 1
-		}
-		else if (JoyX >= Session.JoyThresholdUpper) {
-			x := (JoyX - Session.JoyThresholdUpper) / (100 - Session.JoyThresholdUpper)
-		}
-		else
-			x := 0
-
-		if (x != 0 or y != 0){
-			JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-
-			; So LT doesn't reverse direction
-			if JoyZ > 45
-				JoyZ := 50
-
-			MouseMove, (1 + Session.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * x,  (1 + Session.JoyZBoost * (50 - JoyZ) / 100) * this.top_speed * y, 0, R
-		}
+		MouseMove, (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyX,  (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyY, 0, R
 
 		Return
     }
@@ -295,7 +288,7 @@ Class OSK
 
 		this.Keys := []
 		this.Controls := []
-		this.Modifiers := ["LShift", "LCtrl", "LWin", "LAlt", "RShift", "RCtrl", "RWin", "RAlt", "Caps"]
+		this.Modifiers := ["LShift", "LCtrl", "LWin", "LAlt", "RShift", "RCtrl", "RWin", "RAlt", "CapsLock", "ScrollLock"]
 
 		this.Background := "010409"
 		this.ButtonColour := "0d1117" 
