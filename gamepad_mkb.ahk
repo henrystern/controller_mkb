@@ -36,7 +36,7 @@ HandleOSKClick() {
 }
 Global MouseController := new MouseControls()
 
-Hotkey, % Session.JoystickNumber . "Joy7" " & " Session.JoystickNumber . "Joy8", ToggleJoyMouse, On
+Hotkey, % Session.JoystickNumber . "Joy7", ToggleJoyMouse, On
 
 if Session.Active {
 	ToggleHotKeys("On")
@@ -61,7 +61,7 @@ ToggleHotKeys(State) {
 	Hotkey, % Session.JoystickNumber . "Joy5", J5, % State
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
 	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
-	Hotkey, % Session.JoystickNumber . "Joy7", J7, % State
+	; Hotkey, % Session.JoystickNumber . "Joy7", J7, % State
 	Hotkey, % Session.JoystickNumber . "Joy8", J8, % State
 	Hotkey, % Session.JoystickNumber . "Joy9", J9, % State
 	Hotkey, % Session.JoystickNumber . "Joy10", J10, % State
@@ -71,15 +71,18 @@ Labels() { ; so the returns don't interrupt the main thread
 	; specifies what actions each joy button will perform
 
 	ToggleJoyMouse:
-		If not Session.Active {
-			Session.active := not Session.Active
-			ToggleHotKeys("On")	
-			ComObjCreate("SAPI.SpVoice").Speak("On")
-		}
-		Else {
-			Session.active := not Session.Active
-			ToggleHotKeys("Off")
-			ComObjCreate("SAPI.SpVoice").Speak("Off")
+		KeyWait, % A_ThisHotkey
+		If (A_TimeSinceThisHotkey > 500) {
+			If not Session.Active {
+				Session.active := not Session.Active
+				ToggleHotKeys("On")	
+				ComObjCreate("SAPI.SpVoice").Speak("On")
+			}
+			Else {
+				Session.active := not Session.Active
+				ToggleHotKeys("Off")
+				ComObjCreate("SAPI.SpVoice").Speak("Off")
+			}
 		}
 		Return
 
