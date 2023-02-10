@@ -54,18 +54,41 @@ ToggleHotKeys(State) {
 		MouseController.SetTimer("cursor_timer", "off")
 		MouseController.SetTimer("scroll_wheel_timer", "off")
 	}
-	Hotkey, % Session.JoystickNumber . "Joy1", J1, % State
-	Hotkey, % Session.JoystickNumber . "Joy2", J2, % State
-	Hotkey, % Session.JoystickNumber . "Joy3", J3, % State
-	Hotkey, % Session.JoystickNumber . "Joy4", J4, % State
-	Hotkey, % Session.JoystickNumber . "Joy5", J5, % State
-	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
-	Hotkey, % Session.JoystickNumber . "Joy6", J6, % State
-	; Hotkey, % Session.JoystickNumber . "Joy7", J7, % State
-	Hotkey, % Session.JoystickNumber . "Joy8", J8, % State
-	Hotkey, % Session.JoystickNumber . "Joy9", J9, % State
-	Hotkey, % Session.JoystickNumber . "Joy10", J10, % State
+
+	; regular
+	Hotkey, % Session.JoystickNumber . "Joy1", LeftClick, % State 	 ; A
+	Hotkey, % Session.JoystickNumber . "Joy2", RightClick, % State   ; B
+	Hotkey, % Session.JoystickNumber . "Joy3", SendEnter, % State   ; X
+	Hotkey, % Session.JoystickNumber . "Joy4", ToggleKeyboard, % State   ; Y
+	Hotkey, % Session.JoystickNumber . "Joy5", HoldAltTab, % State   ; LB
+	; Hotkey, % Session.JoystickNumber . "Joy6", , % State   ; RB
+	; Hotkey, % Session.JoystickNumber . "Joy7", , % State ; Back - is already used for toggle
+	; Hotkey, % Session.JoystickNumber . "Joy8", , % State   ; Start
+	Hotkey, % Session.JoystickNumber . "Joy9", MiddleClick, % State   ; LS Down
+	; Hotkey, % Session.JoystickNumber . "Joy10", , % State ; RS Down
+
+	; LT held down - can be used to have lt function as a modifier
+	Hotkey, If, LTDown()
+	Hotkey, % Session.JoystickNumber . "Joy1", MiddleClick, % State 	 ; A
+
+	; keyboard on
+	Hotkey, If, keyboard.Enabled
+	Hotkey, % Session.JoystickNumber . "Joy5", SendBackSpace, % State   ; LB
+	Hotkey, % Session.JoystickNumber . "Joy6", SendSpace, % State   ; RB
+	Hotkey, % Session.JoystickNumber . "Joy9", SendCapsLock, % State   ; LS Down
+	Hotkey, % Session.JoystickNumber . "Joy10", SendCtrl, % State ; RS Down
+
+	; keyboard on with dpad navigation
+	Hotkey, If, keyboard.Enabled && keyboard.IsDPadKeyboard()
+	Hotkey, % Session.JoystickNumber . "Joy1", SendKeyboardPress, % State
 }
+
+; initialize hotkey conditions
+#If, LTDown()
+#If, keyboard.Enabled
+#If, keyboard.Enabled && keyboard.IsDPadKeyboard()
+#If
+
 
 Labels() { ; so the returns don't interrupt the main thread
 	; specifies what actions each joy button will perform
@@ -86,74 +109,57 @@ Labels() { ; so the returns don't interrupt the main thread
 		}
 		Return
 
-	; A
-	J1:
-		if (keyboard.Enabled and keyboard.RowIndex) {
-			Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-			keyboard.HandleOSKClick(Key)
-		}
-		else {
-			Click, left, down
-			KeyWait % A_ThisHotkey
-			Click, left, up
-		}
+	LeftClick:
+		Click, left, down
+		KeyWait % A_ThisHotkey
+		Click, left, up
 		Return
 
-	; B
-	J2:
+	SendKeyboardPress:
+		Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+		keyboard.HandleOSKClick(Key)
+		Return
+
+	RightClick:
 		Click, right, down
 		KeyWait % A_ThisHotkey
 		Click, right, up
 		Return
 
-	; X
-	J3:
+	MiddleClick:
+		Click, middle, down
+		KeyWait % A_ThisHotkey
+		Click, middle, up
+		Return
+
+	SendEnter:
 		SendInput, {Enter}
 		Return
 
-	; Y
-	J4:
+	ToggleKeyboard:
 		keyboard.Toggle()
 		Return
 
-	; LB
-	J5:
-		if (keyboard.Enabled) {
-			keyboard.SendPress("BS")
-		}
-		else {
-			SendInput {Alt down}{Tab}
-			KeyWait, % A_ThisHotkey
-			SendInput {Alt up}
-		}
+	HoldAltTab:
+		SendInput {Alt down}{Tab}
+		KeyWait, % A_ThisHotkey
+		SendInput {Alt up}
 		Return
 
-	; RB
-	J6:
-		if (keyboard.Enabled)
-			keyboard.SendPress("Space")
+	SendBackspace:
+		keyboard.SendPress("BS")
 		Return
 
-	; Back
-	J7:
+	SendSpace:
+		keyboard.SendPress("Space")
 		Return
 
-	; Start
-	J8:
-		Return
-
-	; LS Down
-	J9:
-		If (keyboard.enabled) {
-			keyboard.SendModifier("CapsLock")
-		}
+	SendCapsLock:
+		keyboard.SendModifier("CapsLock")
 		Return
 	
-	; RS Down
-	J10:
-		If (keyboard.enabled) {
-			keyboard.SendModifier("LCtrl")
-		}
+	SendCtrl:
+		keyboard.SendModifier("LCtrl")
 		Return
 
 	DPad:
@@ -161,9 +167,6 @@ Labels() { ; so the returns don't interrupt the main thread
 		if (JoyPOV = -1) {  ; No angle.
 			return
 		}
-
-		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-		JoyZ := max(0, NormalizeJoyRange(JoyZ))
 
 		left := JoyPOV = 27000
 		up := JoyPOV = 0
@@ -180,17 +183,7 @@ Labels() { ; so the returns don't interrupt the main thread
 			else if right
 				keyboard.ChangeIndex("Right")
 		}
-		else if (not JoyZ) {
-			if left
-				SendInput {Left}
-			else if up
-				SendInput {Up}
-			else if down
-				SendInput {Down}
-			else if right
-				SendInput {Right}
-		} 
-		else {
+		else if (LTDown()) {
 			if left
 				SendInput ^+{Tab}
 			else if up
@@ -199,6 +192,16 @@ Labels() { ; so the returns don't interrupt the main thread
 				SendInput ^w
 			else if right
 				SendInput ^{Tab}
+		} 
+		else {
+			if left
+				SendInput {Left}
+			else if up
+				SendInput {Up}
+			else if down
+				SendInput {Down}
+			else if right
+				SendInput {Right}
 		}
 		Sleep, 200
 		return
@@ -223,6 +226,11 @@ NormalizeJoyRange(Joy) {
 
 	; if joy doesnt exceed threshold
 	return 0
+}
+
+LTDown() {
+	JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
+	return JoyZ > 60
 }
 
 Class MouseControls
@@ -646,6 +654,10 @@ Class OSK
 			}
 		}
 		return
+	}
+
+	IsDPadKeyboard() {
+		return this.RowIndex
 	}
 
     UpdateGraphics(Obj, Colour){
