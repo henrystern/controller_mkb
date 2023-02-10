@@ -8,25 +8,7 @@ SetBatchLines, -1
 Process, Priority,, H
 DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
-class State
-; Settings and session info
-{
-	__new() {
-		this.JoystickNumber := 2
-		this.JoyThresholdLower := 50 - 10
-		this.JoyThresholdUpper := 50 + 10
 
-		this.MouseTopSpeed := 5
-		this.ScrollSpeed := 30 
-		this.JoyZBoost := 3 ; Affects how much holding JoyZ increases mouse and scrollspeed
-
-		this.MouseMoveDelay := 10
-		this.ScrollWheelDelay := 10
-		this.DPadDelay := 30
-
-		this.Active := True
-	}
-}
 
 Global Session := new State
 Global keyboard := new OSK("dark", "qwerty")
@@ -34,7 +16,7 @@ HandleOSKClick() {
 	keyboard.HandleOSKClick()
 	return
 }
-Global MouseController := new MouseControls()
+Global Joy := new JoyState()
 
 Hotkey, % Session.JoystickNumber . "Joy7", ToggleJoyMouse, On
 
@@ -46,13 +28,11 @@ ToggleHotKeys(State) {
 	; associates actions with joy buttons
 	if (State = "On") {
 		SetTimer, DPad, % Session.DPadDelay
-		MouseController.SetTimer("cursor_timer", Session.MouseMoveDelay)
-		MouseController.SetTimer("scroll_wheel_timer", Session.ScrollWheelDelay)
+		Joy.SetTimer("Monitor", Session.JoyStickDelay)
 	}
 	else {
 		SetTimer, DPad, off
-		MouseController.SetTimer("cursor_timer", "off")
-		MouseController.SetTimer("scroll_wheel_timer", "off")
+		Joy.SetTimer("Monitor", "off")
 	}
 
 	; regular
@@ -68,7 +48,7 @@ ToggleHotKeys(State) {
 	; Hotkey, % Session.JoystickNumber . "Joy10", , % State ; RS Down
 
 	; LT held down - can be used to have lt function as a modifier
-	Hotkey, If, LTDown()
+	Hotkey, If, Joy.LTDown()
 	Hotkey, % Session.JoystickNumber . "Joy1", MiddleClick, % State 	 ; A
 
 	; keyboard on
@@ -84,14 +64,13 @@ ToggleHotKeys(State) {
 }
 
 ; initialize hotkey conditions
-#If, LTDown()
+#If, Joy.LTDown()
 #If, keyboard.Enabled
 #If, keyboard.Enabled && keyboard.IsDPadKeyboard()
 #If
 
 
 Labels() { ; so the returns don't interrupt the main thread
-	; specifies what actions each joy button will perform
 
 	ToggleJoyMouse:
 		KeyWait, % A_ThisHotkey
@@ -183,7 +162,7 @@ Labels() { ; so the returns don't interrupt the main thread
 			else if right
 				keyboard.ChangeIndex("Right")
 		}
-		else if (LTDown()) {
+		else if (Joy.LTDown()) {
 			if left
 				SendInput ^+{Tab}
 			else if up
@@ -228,19 +207,53 @@ NormalizeJoyRange(Joy) {
 	return 0
 }
 
-LTDown() {
-	JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-	return JoyZ > 60
+
+ReadSettings(settings_category) {
+    IniRead, raw_settings, settings.ini, % settings_category
+    settings := {}
+    Loop, Parse, raw_settings, "`n"
+    {
+        Array := StrSplit(A_LoopField, "=")
+        settings[Array[1]] := StrToBoolIfBool(Trim(Array[2]))
+    }
+    return settings 
 }
 
-Class MouseControls
+StrToBoolIfBool(str) {
+    lower_str := Format("{:L}", str)
+    if (lower_str == "true")
+        return True
+    if (lower_str == "false")
+        return False
+    return str
+}
+
+class State
+; Settings and session info
+{
+	__new() {
+		this.JoystickNumber := 2
+		this.JoyThresholdLower := 50 - 15
+		this.JoyThresholdUpper := 50 + 15
+
+		this.MouseTopSpeed := 5
+		this.ScrollSpeed := 30 
+		this.JoyZBoost := 3 ; Affects how much holding JoyZ increases mouse and scrollspeed
+
+		this.JoyStickDelay := 10
+		this.DPadDelay := 30
+
+		this.Active := True
+	}
+}
+
+Class JoyState
 {
     __New() {
 		this.top_speed := Session.MouseTopSpeed
         this.velocity_x := 0
         this.velocity_y := 0
-        this.scroll_wheel_timer := ObjBindMethod(this, "MoveScrollWheel")
-        this.cursor_timer := ObjBindMethod(this, "MoveCursor")
+        this.Monitor := ObjBindMethod(this, "MonitorJoyState")
     }
 
     SetTimer(timer_id, period) {
@@ -249,44 +262,54 @@ Class MouseControls
 		return
     }
 
+	MonitorJoyState() {
+		RawJoyX := GetKeyState(Session.JoyStickNumber . "JoyX")
+		this.LSx := NormalizeJoyRange(RawJoyX)
+
+		RawJoyY := GetKeyState(Session.JoyStickNumber . "JoyY")
+		this.LSy := NormalizeJoyRange(RawJoyY)
+
+		RawJoyU := GetKeyState(Session.JoyStickNumber . "JoyU")
+		this.RSx := NormalizeJoyRange(RawJoyU)
+
+		RawJoyR := GetKeyState(Session.JoyStickNumber . "JoyR")
+		this.RSy:= - NormalizeJoyRange(RawJoyR)
+
+		RawJoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
+		this.LT := abs(max(NormalizeJoyRange(RawJoyZ), 0))
+		this.RT := abs(min(NormalizeJoyRange(RawJoyZ), 0))
+
+		this.MoveScrollWheel()
+		this.MoveCursor()
+		this.DPad()
+	}
+
+	LTDown() {
+		return this.LT
+	}
+
+	RTDown() {
+		return this.RT
+	}
+
     MoveScrollWheel() {
 		; using mouse_event instead of SendInput to allow smooth scrolling
 		; https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-mouse_event
-		; one click equivalent to dwData 120
-
-		JoyR := GetKeyState(Session.JoyStickNumber . "JoyR")
-		JoyR := - NormalizeJoyRange(JoyR)
-
-		JoyU := GetKeyState(Session.JoyStickNumber . "JoyU")
-		JoyU := NormalizeJoyRange(JoyU)
-
-		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-		JoyZ := abs(min(NormalizeJoyRange(JoyZ), 0))
 
 		; WheelUp/Down
-		if JoyR
-			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, (1 + Session.JoyZBoost * JoyZ) * Session.ScrollSpeed * JoyR, int, 0)
+		if this.RSy
+			DllCall("mouse_event", uint, 0x0800, int, x, int, y, uint, (1 + Session.JoyZBoost * this.RT) * Session.ScrollSpeed * this.RSy, int, 0)
 
 		; WheelLeft/Right
-		if JoyU
-			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, (1 + Session.JoyZBoost * JoyZ) * Session.ScrollSpeed * JoyU, int, 0)
+		if this.RSx
+			DllCall("mouse_event", uint, 0x1000, int, x, int, y, uint, (1 + Session.JoyZBoost * this.RT) * Session.ScrollSpeed * this.RSx, int, 0)
 
 		return
     }
 
     MoveCursor() {
-		JoyX := GetKeyState(Session.JoyStickNumber . "JoyX")
-		JoyX := NormalizeJoyRange(JoyX)
-
-		JoyY := GetKeyState(Session.JoyStickNumber . "JoyY")
-		JoyY := NormalizeJoyRange(JoyY)
-
-		JoyZ := GetKeyState(Session.JoyStickNumber . "JoyZ")
-		JoyZ := abs(min(NormalizeJoyRange(JoyZ), 0))
-
-		if JoyX or JoyY
-			MouseMove, (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyX,  (1 + Session.JoyZBoost * JoyZ) * this.top_speed * JoyY, 0, R
-
+		if this.LSx or this.LSy
+			MouseMove, (1 + Session.JoyZBoost * this.RT) * this.top_speed * this.LSx,  (1 + Session.JoyZBoost * this.RT) * this.top_speed * this.LSy, 0, R
 		Return
     }
 }
