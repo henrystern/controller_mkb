@@ -24,6 +24,9 @@ Global Joy := new JoyState()
 if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
+else {
+	ToggleHotkeys("Off")
+}
 
 
 ToggleHotKeys(State) {
@@ -45,28 +48,31 @@ ToggleHotKeys(State) {
 	; regular
 	for ID, Button in Buttons {
 		if Session.Button[Button]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % State
+			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
 	}
 
 	; LT held down - can be used to have LT function as a modifier
 	Hotkey, If, Joy.LTDown()
 	for ID, Button in Buttons {
-		if Session.Button[Button . "_LTDown"]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button . "_LTDown"] , % State
+		Button := Button . "_LTDown"
+		if Session.Button[Button]
+			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
 	}
 
 	; keyboard on
 	Hotkey, If, keyboard.Enabled
 	for ID, Button in Buttons {
-		if Session.Button[Button . "_KeyboardOn"]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button . "_KeyboardOn"] , % State
+		Button := Button . "_KeyboardOn"
+		if Session.Button[Button]
+			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
 	}
 
 	; keyboard on with dpad navigation
 	Hotkey, If, keyboard.Enabled && keyboard.IsDPadKeyboard()
 	for ID, Button in Buttons {
-		if Session.Button[Button . "_DPadKeyboard"]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button . "_DPadKeyboard"] , % State
+		Button := Button . "_DPadKeyboard"
+		if Session.Button[Button]
+			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
 	}
 }
 
@@ -79,8 +85,8 @@ ToggleHotKeys(State) {
 Labels() { ; so the returns don't interrupt the main thread
 
 	ToggleScript:
-		KeyWait, % A_ThisHotkey
-		If (A_TimeSinceThisHotkey > 500) {
+		; KeyWait, % A_ThisHotkey
+		; If (A_TimeSinceThisHotkey > 500) {
 			If not Session.IsActive {
 				Session.IsActive := not Session.IsActive
 				ToggleHotKeys("On")	
@@ -91,7 +97,7 @@ Labels() { ; so the returns don't interrupt the main thread
 				ToggleHotKeys("Off")
 				ComObjCreate("SAPI.SpVoice").Speak("Off")
 			}
-		}
+		; }
 		Return
 
 	LeftClick:
