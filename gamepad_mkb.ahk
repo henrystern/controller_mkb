@@ -10,21 +10,24 @@ DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
 ; initialize objects
 Global Session := new SessionSettings
+Session.DetectJoystick()
+
 Global keyboard := new OSK(Session.Keyboard.Theme, Session.Keyboard.Layout)
 HandleOSKClick() {
 	keyboard.HandleOSKClick()
 	return
 }
+
 Global Joy := new JoyState()
 
+; Enable Hotkeys
 if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
 
-Hotkey, % Session.General.JoyNumber . "Joy7", ToggleScript
 
 ToggleHotKeys(State) {
-	; associates actions with joy buttons
+	; associate actions with joy buttons
 	if (State = "On") {
 		SetTimer, DPad, % Session.Joystick.DPadDelay
 		Joy.SetTimer("Monitor", Session.JoyStick.JoyDelay)
@@ -34,7 +37,10 @@ ToggleHotKeys(State) {
 		Joy.SetTimer("Monitor", "off")
 	}
 
-	Buttons := {1: "A", 2: "B", 3: "X", 4: "Y", 5: "LB", 6: "RB", 8: "Start", 9: "LSDown", 10: "RSDown"} ; Joy7/Back is already used for toggle
+	Buttons := {1: "A", 2: "B", 3: "X", 4: "Y", 5: "LB", 6: "RB", 8: "Start", 9: "LSDown", 10: "RSDown"} 
+	
+	; Joy7/Back is always on to toggle the script
+	Hotkey, % Session.General.JoyNumber . "Joy7", ToggleScript, On
 
 	; regular
 	for ID, Button in Buttons {
@@ -212,7 +218,7 @@ class SessionSettings
 {
 	__new() {
 		this.General := this.ReadSettings("GENERAL")
-		this.General := this.General ? this.General : {StartActive: True, JoyNumber: , JoyThresholdLower: 35, JoyThresholdUpper: 65}
+		this.General := this.General ? this.General : {StartActive: True, JoyThresholdLower: 35, JoyThresholdUpper: 65}
 
 		this.Joystick := this.ReadSettings("JOYSTICK")
 		this.Joystick := this.Joystick ? this.Joystick : {MouseTopSpeed: 5, ScrollTopSpeed: 30, InvertedScroll: False, RTBoost: 3, JoyDelay: 10, DPadDelay: 30}
@@ -260,6 +266,26 @@ class SessionSettings
 		return str
 	}
 
+	DetectJoystick() {
+		JoyInfo := GetKeyState(this.General.JoyNumber . "JoyInfo")
+		if not JoyInfo {
+			msgbox, 4,, % "WARNING: No Joystick detected with the specified JoyNumber" this.General.JoyNumber ".`rWould you like to detect a JoyNumber?"
+			IfMsgBox, Yes 
+			{
+				Loop 10 {
+					JoyInfo := GetKeyState(A_Index . "JoyInfo")
+					if JoyInfo {
+						MsgBox % "Using joystick " A_Index ", with properties: " JoyInfo
+						this.General.JoyNumber := A_Index
+						Return	
+					}
+				}
+			}
+			MsgBox No Joystick detected. Exiting Script.
+			ExitApp
+		}
+	}
+
 }
 
 Class JoyState
@@ -268,11 +294,6 @@ Class JoyState
         this.velocity_x := 0
         this.velocity_y := 0
         this.Monitor := ObjBindMethod(this, "MonitorJoyState")
-		this.JoyInfo := GetKeyState(Session.General.JoyNumber . "JoyInfo")
-		if not this.JoyInfo {
-			msgbox WARNING:`r`tNo Joystick detected.`r`tThis will cause high CPU usage.`r`tTry changing the JoyNumber setting in settings.ini.`r`The script will now exit.
-			ExitApp
-		}
     }
 
     SetTimer(timer_id, period) {
