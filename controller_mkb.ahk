@@ -21,6 +21,7 @@ HandleOSKClick() {
 Global Joy := new JoyState()
 
 ; Enable Hotkeys
+Joy.SetTimer("MonitorTriggers", Session.Joystick.JoyDelay) 
 if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
@@ -28,22 +29,17 @@ else {
 	ToggleHotkeys("Off")
 }
 
-
 ToggleHotKeys(State) {
-	; associate actions with joy buttons
 	if (State = "On") {
 		SetTimer, DPad, % Session.Joystick.DPadDelay
-		Joy.SetTimer("Monitor", Session.JoyStick.JoyDelay)
+		Joy.SetTimer("Monitor", Session.Joystick.JoyDelay)
 	}
 	else {
 		SetTimer, DPad, off
 		Joy.SetTimer("Monitor", "off")
 	}
 
-	Buttons := {1: "A", 2: "B", 3: "X", 4: "Y", 5: "LB", 6: "RB", 8: "Start", 9: "LSDown", 10: "RSDown"} 
-	
-	; Joy7/Back is always on to toggle the script
-	Hotkey, % Session.General.JoyNumber . "Joy7", ToggleScript, On
+	Buttons := {1: "A", 2: "B", 3: "X", 4: "Y", 5: "LB", 6: "RB", 7: "Back", 8: "Start", 9: "LSDown", 10: "RSDown"} 
 
 	; regular
 	for ID, Button in Buttons {
@@ -299,7 +295,8 @@ Class JoyState
     __New() {
         this.velocity_x := 0
         this.velocity_y := 0
-        this.Monitor := ObjBindMethod(this, "MonitorJoyState")
+        this.Monitor := ObjBindMethod(this, "MonitorJoySticks")
+        this.MonitorTrigger := ObjBindMethod(this, "MonitorTriggers")
     }
 
     SetTimer(timer_id, period) {
@@ -308,7 +305,7 @@ Class JoyState
 		return
     }
 
-	MonitorJoyState() {
+	MonitorJoySticks() {
 		RawJoyX := GetKeyState(Session.General.JoyNumber . "JoyX")
 		this.LSx := Session.JoyStick.InvertedMouse ? - NormalizeJoyRange(RawJoyX) : NormalizeJoyRange(RawJoyX)
 
@@ -321,13 +318,15 @@ Class JoyState
 		RawJoyR := GetKeyState(Session.General.JoyNumber . "JoyR")
 		this.RSy := Session.JoyStick.InvertedScroll ? NormalizeJoyRange(RawJoyR) : - NormalizeJoyRange(RawJoyR)
 
-		RawJoyZ := GetKeyState(Session.General.JoyNumber . "JoyZ")
-		this.LT := abs(max(NormalizeJoyRange(RawJoyZ), 0))
-		this.RT := abs(min(NormalizeJoyRange(RawJoyZ), 0))
-
 		this.MoveScrollWheel()
 		this.MoveCursor()
 		this.DPad()
+	}
+
+	MonitorTriggers() {
+		RawJoyZ := GetKeyState(Session.General.JoyNumber . "JoyZ")
+		this.LT := abs(max(NormalizeJoyRange(RawJoyZ), 0))
+		this.RT := abs(min(NormalizeJoyRange(RawJoyZ), 0))
 	}
 
 	LTDown() {
