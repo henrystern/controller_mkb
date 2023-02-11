@@ -21,7 +21,7 @@ HandleOSKClick() {
 Global Joy := new JoyState()
 
 ; Enable Hotkeys
-Joy.SetTimer("MonitorTriggers", Session.Joystick.JoyDelay) 
+Joy.SetTimer("MonitorTrigger", Session.Joystick.JoyDelay) 
 if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
