@@ -26,6 +26,7 @@ if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
 else {
+	ToggleHotKeys("On") ; otherwise toggle won't enable hotkeys
 	ToggleHotkeys("Off")
 }
 
