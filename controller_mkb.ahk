@@ -8,7 +8,7 @@ SetBatchLines, -1
 Process, Priority,, H
 DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
-#Include, on_screen_keyboard.ahk
+#Include, osk.ahk
 
 ; initialize objects
 Global Session := new SessionSettings
@@ -24,10 +24,11 @@ if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
 else {
-	ToggleHotKeys("On") ; otherwise toggle won't enable hotkeys
+	; ToggleHotKeys("On") ; otherwise toggle won't enable hotkeys
 	ToggleHotkeys("Off")
 }
 
+; todo fix static hotkeys not being toggled
 ToggleHotKeys(State) {
 	if (State = "On") {
 		SetTimer, DPad, % Session.Joystick.DPadDelay
@@ -42,32 +43,48 @@ ToggleHotKeys(State) {
 
 	; regular
 	for ID, Button in Buttons {
-		if Session.Button[Button]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
+		if Session.Button[Button] {
+			if (State = "On" or Session.Button[Button] = "ToggleScript" or not IsLabel(Session.General.JoyNumber . "Joy" . ID))
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+			else
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+		}
 	}
 
 	; LT held down - can be used to have LT function as a modifier
 	Hotkey, If, Joy.LTDown()
 	for ID, Button in Buttons {
 		Button := Button . "_LTDown"
-		if Session.Button[Button]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
+		if Session.Button[Button] {
+			if (State = "On" or Session.Button[Button] = "ToggleScript")
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+			else
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+		}
 	}
 
 	; keyboard on
 	Hotkey, If, keyboard.Enabled
 	for ID, Button in Buttons {
 		Button := Button . "_KeyboardOn"
-		if Session.Button[Button]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
+		if Session.Button[Button] {
+			if (State = "On" or Session.Button[Button] = "ToggleScript")
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+			else
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+		}
 	}
 
 	; keyboard on with dpad navigation
 	Hotkey, If, keyboard.Enabled && keyboard.IsDPadKeyboard()
 	for ID, Button in Buttons {
 		Button := Button . "_DPadKeyboard"
-		if Session.Button[Button]
-			Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button] , % Session.Button[Button] = "ToggleScript" ? "On" : State
+		if Session.Button[Button] {
+			if (State = "On" or Session.Button[Button] = "ToggleScript")
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+			else
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+		}
 	}
 }
 
@@ -102,8 +119,13 @@ Labels() { ; so the returns don't interrupt the main thread
 		Return
 
 	SendKeyboardPress:
-		Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-		keyboard.HandleOSKClick(Key)
+		while GetKeyState(A_ThisHotkey) {
+			if A_Index > 1
+				Sleep, 150
+			Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+			keyboard.HandleOSKClick(Key)
+			Sleep, 10
+		}
 		Return
 
 	RightClick:
@@ -119,7 +141,12 @@ Labels() { ; so the returns don't interrupt the main thread
 		Return
 
 	SendEnter:
-		SendInput, {Enter}
+		while GetKeyState(A_ThisHotkey) {
+			if A_Index > 1
+				Sleep, 200
+			SendInput, {Enter}
+			Sleep, 10
+		}
 		Return
 
 	ToggleKeyboard:
@@ -133,11 +160,21 @@ Labels() { ; so the returns don't interrupt the main thread
 		Return
 
 	SendBackspace:
-		keyboard.SendPress("BS")
+		while GetKeyState(A_ThisHotkey) {
+			if A_Index > 1
+				Sleep, 150
+			keyboard.SendPress("BS")
+			Sleep, 10
+		}
 		Return
 
 	SendSpace:
-		keyboard.SendPress("Space")
+		while GetKeyState(A_ThisHotkey) {
+			if A_Index > 1
+				Sleep, 150
+			keyboard.SendPress("Space")
+			Sleep, 10
+		}
 		Return
 
 	SendCapsLock:
@@ -149,47 +186,47 @@ Labels() { ; so the returns don't interrupt the main thread
 		Return
 
 	DPad:
-		JoyPOV := GetKeyState(Session.General.JoyNumber . "JoyPOV")
-		if (JoyPOV = -1) {  ; No angle.
-			return
-		}
+		while GetKeyState(Session.General.JoyNumber . "JoyPOV") != -1 {
+			if A_Index > 1
+				Sleep, 150
+			JoyPOV := GetKeyState(Session.General.JoyNumber . "JoyPOV")
+			left := JoyPOV = 27000
+			up := JoyPOV = 0
+			down := JoyPOV = 18000
+			right := JoyPOV = 9000
 
-		left := JoyPOV = 27000
-		up := JoyPOV = 0
-		down := JoyPOV = 18000
-		right := JoyPOV = 9000
-
-		if keyboard.Enabled {
-			if left
-				keyboard.ChangeIndex("Left")
-			else if up
-				keyboard.ChangeIndex("Up")
-			else if down
-				keyboard.ChangeIndex("Down")
-			else if right
-				keyboard.ChangeIndex("Right")
+			if keyboard.Enabled {
+				if left
+					keyboard.ChangeIndex("Left")
+				else if up
+					keyboard.ChangeIndex("Up")
+				else if down
+					keyboard.ChangeIndex("Down")
+				else if right
+					keyboard.ChangeIndex("Right")
+			}
+			else if (Joy.LTDown()) {
+				if left
+					SendInput ^+{Tab}
+				else if up
+					SendInput ^t
+				else if down
+					SendInput ^w
+				else if right
+					SendInput ^{Tab}
+			} 
+			else {
+				if left
+					SendInput {Left}
+				else if up
+					SendInput {Up}
+				else if down
+					SendInput {Down}
+				else if right
+					SendInput {Right}
+			}
+			Sleep, 10
 		}
-		else if (Joy.LTDown()) {
-			if left
-				SendInput ^+{Tab}
-			else if up
-				SendInput ^t
-			else if down
-				SendInput ^w
-			else if right
-				SendInput ^{Tab}
-		} 
-		else {
-			if left
-				SendInput {Left}
-			else if up
-				SendInput {Up}
-			else if down
-				SendInput {Down}
-			else if right
-				SendInput {Right}
-		}
-		Sleep, 200
 		return
 
 }
