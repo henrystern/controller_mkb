@@ -11,7 +11,7 @@ If (A_ScriptFullPath = A_LineFile) { ; if run as script rather than included els
 	move_right := ObjBindMethod(keyboard, "changeIndex", "Right")
 	send_press := func("SendKeyboardPress").bind()
 
-	Hotkey, ^Ins, %toggle%
+	Hotkey, ^Ins, % toggle
 
 	Hotkey, If, keyboard.Enabled
 	Hotkey, Left, % move_left
@@ -21,17 +21,17 @@ If (A_ScriptFullPath = A_LineFile) { ; if run as script rather than included els
 
 	Hotkey, If, keyboard.Enabled && keyboard.IsDPadKeyboard()
 	Hotkey, Enter, % send_press
+
+	SendKeyboardPress() {
+		Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+		keyboard.HandleOSKClick(Key)
+		Return
+	}
 }
 
 #If, keyboard.Enabled
 #If, keyboard.Enabled && keyboard.IsDPadKeyboard()
 #If
-
-SendKeyboardPress() {
-	Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
-	keyboard.HandleOSKClick(Key)
-	Return
-}
 
 HandleOSKClick() {
 	keyboard.HandleOSKClick()
