@@ -1,8 +1,8 @@
 ﻿#SingleInstance
 SendMode Input
 
-If (A_ScriptFullPath = A_LineFile) { ; if run as script rather than included elsewhere
-	Global keyboard := new OSK(Session.Keyboard.Theme, Session.Keyboard.Layout)
+If (A_ScriptFullPath = A_LineFile) { ; if run as script rather than included elsewhere - for testing
+	Global keyboard := new OSK("dark", "qwerty")
 
 	toggle := ObjBindMethod(keyboard, "toggle")
 	move_left := ObjBindMethod(keyboard, "changeIndex", "Left")
@@ -29,10 +29,12 @@ If (A_ScriptFullPath = A_LineFile) { ; if run as script rather than included els
 	}
 }
 
+; for context sensitive hotkeys
 #If, keyboard.Enabled
 #If, keyboard.Enabled && keyboard.IsDPadKeyboard()
 #If
 
+; can't use method for gui onClick
 HandleOSKClick() {
 	keyboard.HandleOSKClick()
 	return
