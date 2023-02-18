@@ -24,7 +24,6 @@ if Session.General.StartActive {
 	ToggleHotKeys("On")
 }
 else {
-	; ToggleHotKeys("On") ; otherwise toggle won't enable hotkeys
 	ToggleHotkeys("Off")
 }
 
@@ -42,12 +41,13 @@ ToggleHotKeys(State) {
 	Buttons := {1: "A", 2: "B", 3: "X", 4: "Y", 5: "LB", 6: "RB", 7: "Back", 8: "Start", 9: "LSDown", 10: "RSDown"} 
 
 	; regular
+	Hotkey, If ; important
 	for ID, Button in Buttons {
 		if Session.Button[Button] {
-			if (State = "On" or Session.Button[Button] = "ToggleScript" or not IsLabel(Session.General.JoyNumber . "Joy" . ID))
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+			if (State = "On" or Session.Button[Button] = "ToggleScript")
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], On
 			else
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
 	}
 
@@ -59,7 +59,7 @@ ToggleHotKeys(State) {
 			if (State = "On" or Session.Button[Button] = "ToggleScript")
 				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
 			else
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
 	}
 
@@ -71,7 +71,7 @@ ToggleHotKeys(State) {
 			if (State = "On" or Session.Button[Button] = "ToggleScript")
 				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
 			else
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
 	}
 
@@ -83,7 +83,7 @@ ToggleHotKeys(State) {
 			if (State = "On" or Session.Button[Button] = "ToggleScript")
 				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
 			else
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, Off
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
 	}
 }
