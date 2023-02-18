@@ -12,7 +12,6 @@ DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
 ; initialize objects
 Global Session := new SessionSettings
-Detected := Session.DetectJoystick()
 
 Global keyboard := new OSK(Session.Keyboard.Theme, Session.Keyboard.Layout)
 
@@ -21,13 +20,11 @@ Global Joy := new JoyState()
 ; Enable Hotkeys
 Joy.SetTimer("MonitorTrigger", Session.Joystick.JoyDelay) 
 if Session.General.StartActive {
+	Detected := Session.DetectJoystick() ; activating hotkeys without active joystick can cause high CPU usage
 	if Detected
 		ToggleHotKeys("On")
-	else {
-		Detected := Session.DetectJoystick()
-		if Detected
-			ToggleHotKeys("On")
-	}
+	else
+		ToggleHotkeys("Off")
 }
 else {
 	ToggleHotkeys("Off")
