@@ -12,7 +12,7 @@ DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
 ; initialize objects
 Global Session := new SessionSettings
-Session.DetectJoystick()
+Detected := Session.DetectJoystick()
 
 Global keyboard := new OSK(Session.Keyboard.Theme, Session.Keyboard.Layout)
 
@@ -21,7 +21,13 @@ Global Joy := new JoyState()
 ; Enable Hotkeys
 Joy.SetTimer("MonitorTrigger", Session.Joystick.JoyDelay) 
 if Session.General.StartActive {
-	ToggleHotKeys("On")
+	if Detected
+		ToggleHotKeys("On")
+	else {
+		Detected := Session.DetectJoystick()
+		if Detected
+			ToggleHotKeys("On")
+	}
 }
 else {
 	ToggleHotkeys("Off")
@@ -361,13 +367,14 @@ class SessionSettings
 					if JoyInfo {
 						MsgBox % "Using joystick " A_Index ", with properties: " JoyInfo
 						this.General.JoyNumber := A_Index
-						Return	
+						Return True
 					}
 				}
 			}
-			MsgBox No Joystick detected. Exiting Script.
-			ExitApp
+			MsgBox No Joystick detected. Hotkeys will not be activated. Press toggle key when Joystick is on to activate the script.
+			Return False
 		}
+		Return True
 	}
 
 }
