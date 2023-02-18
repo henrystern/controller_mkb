@@ -8,7 +8,7 @@ SetBatchLines, -1
 Process, Priority,, H
 DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
 
-#Include, osk.ahk
+#Include, %A_ScriptDir%\osk.ahk
 
 ; initialize objects
 Global Session := new SessionSettings
@@ -27,7 +27,12 @@ else {
 	ToggleHotkeys("Off")
 }
 
-; todo fix static hotkeys not being toggled
+; initialize hotkey conditions
+#If, Joy.LTDown()
+#If
+
+Return
+
 ToggleHotKeys(State) {
 	if (State = "On") {
 		SetTimer, DPad, % Session.Joystick.DPadDelay
@@ -57,7 +62,7 @@ ToggleHotKeys(State) {
 		Button := Button . "_LTDown"
 		if Session.Button[Button] {
 			if (State = "On" or Session.Button[Button] = "ToggleScript")
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], On
 			else
 				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
@@ -69,7 +74,7 @@ ToggleHotKeys(State) {
 		Button := Button . "_KeyboardOn"
 		if Session.Button[Button] {
 			if (State = "On" or Session.Button[Button] = "ToggleScript")
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], On
 			else
 				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
@@ -81,35 +86,26 @@ ToggleHotKeys(State) {
 		Button := Button . "_DPadKeyboard"
 		if Session.Button[Button] {
 			if (State = "On" or Session.Button[Button] = "ToggleScript")
-				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button]
+				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], On
 			else
 				Hotkey, % Session.General.JoyNumber . "Joy" . ID, % Session.Button[Button], Off
 		}
 	}
 }
 
-; initialize hotkey conditions
-#If, Joy.LTDown()
-#If, keyboard.Enabled
-#If, keyboard.Enabled && keyboard.IsDPadKeyboard()
-#If
-
 Labels() { ; so the returns don't interrupt the main thread
 
 	ToggleScript:
-		; KeyWait, % A_ThisHotkey
-		; If (A_TimeSinceThisHotkey > 500) {
-			If not Session.IsActive {
-				Session.IsActive := not Session.IsActive
-				ToggleHotKeys("On")	
-				ComObjCreate("SAPI.SpVoice").Speak("On")
-			}
-			Else {
-				Session.IsActive := not Session.IsActive
-				ToggleHotKeys("Off")
-				ComObjCreate("SAPI.SpVoice").Speak("Off")
-			}
-		; }
+		If not Session.IsActive {
+			Session.IsActive := not Session.IsActive
+			ToggleHotKeys("On")	
+			ComObjCreate("SAPI.SpVoice").Speak("On")
+		}
+		Else {
+			Session.IsActive := not Session.IsActive
+			ToggleHotKeys("Off")
+			ComObjCreate("SAPI.SpVoice").Speak("Off")
+		}
 		Return
 
 	LeftClick:
@@ -120,11 +116,21 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	SendKeyboardPress:
 		while GetKeyState(A_ThisHotkey) {
-			if A_Index > 1
-				Sleep, 150
 			Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
 			keyboard.HandleOSKClick(Key)
-			Sleep, 10
+			if (A_Index = 1) {
+				start_time := A_TimeSinceThisHotkey
+				Loop {
+					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+						return
+					}
+					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
+						break
+					}
+				}
+			}
+			else
+				Sleep % Session.JoyStick.RepeatSpeed
 		}
 		Return
 
@@ -142,10 +148,20 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	SendEnter:
 		while GetKeyState(A_ThisHotkey) {
-			if A_Index > 1
-				Sleep, 200
 			SendInput, {Enter}
-			Sleep, 10
+			if (A_Index = 1) {
+				start_time := A_TimeSinceThisHotkey
+				Loop {
+					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+						return
+					}
+					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
+						break
+					}
+				}
+			}
+			else
+				Sleep % Session.JoyStick.RepeatSpeed
 		}
 		Return
 
@@ -161,19 +177,39 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	SendBackspace:
 		while GetKeyState(A_ThisHotkey) {
-			if A_Index > 1
-				Sleep, 150
 			keyboard.SendPress("BS")
-			Sleep, 10
+			if (A_Index = 1) {
+				start_time := A_TimeSinceThisHotkey
+				Loop {
+					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+						return
+					}
+					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
+						break
+					}
+				}
+			}
+			else
+				Sleep % Session.JoyStick.RepeatSpeed
 		}
 		Return
 
 	SendSpace:
 		while GetKeyState(A_ThisHotkey) {
-			if A_Index > 1
-				Sleep, 150
 			keyboard.SendPress("Space")
-			Sleep, 10
+			if (A_Index = 1) {
+				start_time := A_TimeSinceThisHotkey
+				Loop {
+					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+						return
+					}
+					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
+						break
+					}
+				}
+			}
+			else
+				Sleep % Session.JoyStick.RepeatSpeed
 		}
 		Return
 
@@ -187,8 +223,6 @@ Labels() { ; so the returns don't interrupt the main thread
 
 	DPad:
 		while GetKeyState(Session.General.JoyNumber . "JoyPOV") != -1 {
-			if A_Index > 1
-				Sleep, 150
 			JoyPOV := GetKeyState(Session.General.JoyNumber . "JoyPOV")
 			left := JoyPOV = 27000
 			up := JoyPOV = 0
@@ -225,7 +259,19 @@ Labels() { ; so the returns don't interrupt the main thread
 				else if right
 					SendInput {Right}
 			}
-			Sleep, 10
+			if (A_Index = 1) {
+				start_time := A_TimeSinceThisHotkey
+				Loop {
+					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+						return
+					}
+					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
+						break
+					}
+				}
+			}
+			else
+				Sleep % Session.JoyStick.RepeatSpeed
 		}
 		return
 
