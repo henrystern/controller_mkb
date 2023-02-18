@@ -356,19 +356,20 @@ class SessionSettings
 	DetectJoystick() {
 		JoyInfo := GetKeyState(this.General.JoyNumber . "JoyInfo")
 		if not JoyInfo {
-			msgbox, 4,, % "WARNING: No Joystick detected with the specified JoyNumber" this.General.JoyNumber ".`rWould you like to detect a JoyNumber?"
-			IfMsgBox, Yes 
-			{
-				Loop 10 {
-					JoyInfo := GetKeyState(A_Index . "JoyInfo")
-					if JoyInfo {
-						MsgBox % "Using joystick " A_Index ", with properties: " JoyInfo
-						this.General.JoyNumber := A_Index
-						Return True
-					}
-				}
-			}
-			MsgBox No Joystick detected. Hotkeys will not be activated. Press toggle key when Joystick is on to activate the script.
+			MsgBox, , , % "WARNING: No Joystick detected with the specified JoyNumber" this.General.JoyNumber ". Hotkeys will not be activated until toggled by an active joystick.", 5
+			; msgbox, 4,, % "WARNING: No Joystick detected with the specified JoyNumber" this.General.JoyNumber ".`rWould you like to detect a JoyNumber?"
+			; IfMsgBox, Yes 
+			; {
+			; 	Loop 10 {
+			; 		JoyInfo := GetKeyState(A_Index . "JoyInfo")
+			; 		if JoyInfo {
+			; 			MsgBox % "Using joystick " A_Index ", with properties: " JoyInfo
+			; 			this.General.JoyNumber := A_Index
+			; 			Return True
+			; 		}
+			; 	}
+			; }
+			; MsgBox No Joystick detected. Hotkeys will not be activated. Press toggle key when Joystick is on to activate the script.
 			Return False
 		}
 		Return True
