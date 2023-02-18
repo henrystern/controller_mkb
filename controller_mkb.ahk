@@ -127,7 +127,7 @@ Labels() { ; so the returns don't interrupt the main thread
 			if (A_Index = 1) {
 				start_time := A_TimeSinceThisHotkey
 				Loop {
-					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+					if (not GetKeyState(A_ThisHotkey)) {
 						return
 					}
 					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
@@ -158,7 +158,7 @@ Labels() { ; so the returns don't interrupt the main thread
 			if (A_Index = 1) {
 				start_time := A_TimeSinceThisHotkey
 				Loop {
-					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+					if (not GetKeyState(A_ThisHotkey)) {
 						return
 					}
 					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
@@ -187,7 +187,7 @@ Labels() { ; so the returns don't interrupt the main thread
 			if (A_Index = 1) {
 				start_time := A_TimeSinceThisHotkey
 				Loop {
-					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+					if (not GetKeyState(A_ThisHotkey)) {
 						return
 					}
 					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
@@ -206,7 +206,7 @@ Labels() { ; so the returns don't interrupt the main thread
 			if (A_Index = 1) {
 				start_time := A_TimeSinceThisHotkey
 				Loop {
-					if (GetKeyState(Session.General.JoyNumber . "JoyPOV") = -1) {
+					if (not GetKeyState(A_ThisHotkey)) {
 						return
 					}
 					else if (A_TimeSinceThisHotkey - start_time > Session.JoyStick.RepeatDelay) {
