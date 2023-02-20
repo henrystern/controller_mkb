@@ -178,6 +178,12 @@ Labels() { ; so the returns don't interrupt the main thread
         SendInput {Alt up}
         Return
 
+    SendEsc:
+        SendInput {Esc Down}
+        KeyWait % A_ThisHotkey
+        SendInput {Esc Up}
+        Return
+
     SendBackspace:
         while GetKeyState(A_ThisHotkey) {
             keyboard.SendPress("BS")
