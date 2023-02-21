@@ -119,7 +119,7 @@ Labels() { ; so the returns don't interrupt the main thread
 
     SendKeyboardPress:
         while GetKeyState(A_ThisHotkey) {
-            Key := keyboard.Layout[keyboard.RowIndex, keyboard.ColumnIndex].1
+            Key := keyboard.RetrieveDPadSelected()
             keyboard.HandleOSKClick(Key)
             if (A_Index = 1) {
                 start_time := A_TimeSinceThisHotkey
